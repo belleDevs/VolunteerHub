@@ -70,8 +70,8 @@
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                                 <i class="fa-solid fa-envelope text-xs"></i>
                             </span>
-                            <input type="email" name="email" id="auth-email" value="admin@volunteerhub.ph" required 
-                                   class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none" placeholder="name@domain.com">
+                            <input type="email" name="email" id="auth-email" value="{{ old('email') }}" required 
+                                   class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none" placeholder="Enter your email">
                         </div>
                     </div>
                     <div>
@@ -80,8 +80,8 @@
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                                 <i class="fa-solid fa-lock text-xs"></i>
                             </span>
-                            <input type="password" name="password" id="auth-password" value="password" required 
-                                   class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none" placeholder="Enter security passphrase">
+                            <input type="password" name="password" id="auth-password" required 
+                                   class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none" placeholder="Enter your password">
                         </div>
                     </div>
 
@@ -107,16 +107,6 @@
                     </div>
                 </form>
 
-                <!-- Quick Credentials Panel -->
-                <div class="mt-6 bg-slate-50 rounded-2xl p-4 border border-slate-200/60">
-                    <h5 class="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">Prototype Quick Fill:</h5>
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="selectAuthRole('admin')" class="bg-white border border-slate-200 hover:border-jci-blue px-2.5 py-1 rounded text-[10px] font-semibold text-slate-600 transition">Admin Node</button>
-                        <button onclick="selectAuthRole('org')" class="bg-white border border-slate-200 hover:border-jci-blue px-2.5 py-1 rounded text-[10px] font-semibold text-slate-600 transition">JCI Surigao Wensies</button>
-                        <button onclick="selectAuthRole('volunteer')" class="bg-white border border-slate-200 hover:border-jci-blue px-2.5 py-1 rounded text-[10px] font-semibold text-slate-600 transition">Volunteer (Juan)</button>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
@@ -135,25 +125,6 @@
             if (activeBtn) {
                 activeBtn.classList.remove('border-slate-200', 'text-slate-600');
                 activeBtn.classList.add('border-2', 'border-jci-blue', 'bg-blue-50/50', 'text-jci-blue');
-            }
-            
-            // Populate credentials
-            quickFillCreds(role);
-        }
-
-        function quickFillCreds(role) {
-            const emailInput = document.getElementById('auth-email');
-            const passwordInput = document.getElementById('auth-password');
-            
-            const creds = {
-                admin: { email: 'admin@volunteerhub.ph', pass: 'password' },
-                org: { email: 'org@volunteerhub.ph', pass: 'password' },
-                volunteer: { email: 'juan@volunteerhub.ph', pass: 'password' }
-            };
-            
-            if (creds[role]) {
-                emailInput.value = creds[role].email;
-                passwordInput.value = creds[role].pass;
             }
         }
     </script>

@@ -7,14 +7,14 @@
             <div class="flex items-center space-x-4 p-4 rounded-2xl glass-card premium-shadow hover-lift animate-fade-in-up">
                 <div class="p-3 bg-blue-100 text-jci-blue rounded-xl"><i class="fa-solid fa-users text-lg"></i></div>
                 <div>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Total Volunteers</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Approved Volunteers</p>
                     <h3 class="text-xl font-black text-slate-800">{{ $totalVolunteers }}</h3>
                 </div>
             </div>
             <div class="flex items-center space-x-4 p-4 rounded-2xl glass-card premium-shadow hover-lift animate-fade-in-up" style="animation-delay: 50ms;">
                 <div class="p-3 bg-emerald-100 text-emerald-600 rounded-xl"><i class="fa-solid fa-calendar-check text-lg"></i></div>
                 <div>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Active Events</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Current Events</p>
                     <h3 class="text-xl font-black text-slate-800">{{ $activeEvents }}</h3>
                 </div>
             </div>
@@ -28,35 +28,39 @@
             <div class="flex items-center space-x-4 p-4 rounded-2xl glass-card premium-shadow hover-lift animate-fade-in-up" style="animation-delay: 155ms;">
                 <div class="p-3 bg-amber-100 text-amber-600 rounded-xl"><i class="fa-solid fa-tasks text-lg"></i></div>
                 <div>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Open Tasks</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Current Open Tasks</p>
                     <h3 class="text-xl font-black text-slate-800">{{ $openTasks }}</h3>
                 </div>
             </div>
         </div>
 
-        <!-- System Overview / Quick Report Gen -->
+        <!-- System Overview -->
         <div class="glass-card premium-shadow rounded-3xl p-6 space-y-4 animate-fade-in-up" style="animation-delay: 200ms;">
             <h4 class="font-extrabold text-sm text-slate-800 flex items-center gap-2">
-                <i class="fa-solid fa-file-invoice text-jci-blue"></i> On-Demand Report Builder (Export Module)
+                <i class="fa-solid fa-chart-pie text-jci-blue"></i> System Activity Snapshot
             </h4>
-            <p class="text-xs text-slate-500">Generate compliance documentation and demographic breakdowns of community tasks across Surigao City chapters.</p>
+            <p class="text-xs text-slate-500">Live counts from organization reviews, certificates, chatbot usage, and broadcast records.</p>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <button onclick="triggerToast('Synthesizing Volunteer Participation Data... Document saved.', 'success')" class="p-4 bg-slate-50/50 hover:bg-blue-50/50 border border-slate-200 rounded-2xl text-left transition-all duration-200 hover-lift premium-shadow">
-                    <h5 class="text-xs font-bold text-slate-800">Volunteer Report</h5>
-                    <p class="text-[10px] text-slate-400 mt-1">Export PDF format</p>
-                </button>
-                <button onclick="triggerToast('Generating Event Engagement Logs... Sheet downloaded.', 'success')" class="p-4 bg-slate-50/50 hover:bg-emerald-50/50 border border-slate-200 rounded-2xl text-left transition-all duration-200 hover-lift premium-shadow">
-                    <h5 class="text-xs font-bold text-slate-800">Event Report</h5>
-                    <p class="text-[10px] text-slate-400 mt-1">Export Excel spreadsheet</p>
-                </button>
-                <button onclick="triggerToast('Compiling Organization Audits... Saved to files.', 'success')" class="p-4 bg-slate-50/50 hover:bg-purple-50/50 border border-slate-200 rounded-2xl text-left transition-all duration-200 hover-lift premium-shadow">
-                    <h5 class="text-xs font-bold text-slate-800">Organization Audit</h5>
-                    <p class="text-[10px] text-slate-400 mt-1">Export PDF format</p>
-                </button>
-                <button onclick="triggerToast('Loading system configurations...', 'info')" class="p-4 bg-slate-50/50 hover:bg-amber-50/50 border border-slate-200 rounded-2xl text-left transition-all duration-200 hover-lift premium-shadow">
-                    <h5 class="text-xs font-bold text-slate-800">Certificate Log</h5>
-                    <p class="text-[10px] text-slate-400 mt-1">Verify SHA-256 blocks</p>
-                </button>
+                <div class="p-4 bg-slate-50/50 border border-slate-200 rounded-2xl premium-shadow">
+                    <h5 class="text-xs font-bold text-slate-800">Completion Reviews</h5>
+                    <p class="text-2xl font-black text-amber-600 mt-1">{{ $pendingCompletionReviews }}</p>
+                    <p class="text-[10px] text-slate-400">Waiting for organization approval</p>
+                </div>
+                <div class="p-4 bg-slate-50/50 border border-slate-200 rounded-2xl premium-shadow">
+                    <h5 class="text-xs font-bold text-slate-800">Issued Certificates</h5>
+                    <p class="text-2xl font-black text-emerald-600 mt-1">{{ $issuedCertificates }}</p>
+                    <p class="text-[10px] text-slate-400">Generated after verified tasks</p>
+                </div>
+                <div class="p-4 bg-slate-50/50 border border-slate-200 rounded-2xl premium-shadow">
+                    <h5 class="text-xs font-bold text-slate-800">Chatbot Messages</h5>
+                    <p class="text-2xl font-black text-jci-blue mt-1">{{ $chatbotMessageCount }}</p>
+                    <p class="text-[10px] text-slate-400">Volunteer assistant history</p>
+                </div>
+                <div class="p-4 bg-slate-50/50 border border-slate-200 rounded-2xl premium-shadow">
+                    <h5 class="text-xs font-bold text-slate-800">Broadcast Records</h5>
+                    <p class="text-2xl font-black text-purple-600 mt-1">{{ $broadcastLogCount }}</p>
+                    <p class="text-[10px] text-slate-400">Administrative notices logged</p>
+                </div>
             </div>
         </div>
     </div>
@@ -174,6 +178,62 @@
                 @endif
             </div>
         </div>
+
+        <div class="pt-5 border-t border-slate-100 space-y-3">
+            <div class="flex justify-between items-center">
+                <h5 class="font-bold text-xs text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-comments text-jci-blue"></i> Recent Volunteer Chatbot Conversations
+                </h5>
+                <span class="text-[10px] text-slate-400 font-semibold">Latest 30 messages</span>
+            </div>
+
+            @if($chatbotLogs->count() > 0)
+                <div class="space-y-2 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+                    @foreach($chatbotLogs as $log)
+                        <div class="p-4 bg-slate-50/40 rounded-2xl border border-slate-200/70 premium-shadow">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                                <div>
+                                    <h6 class="text-xs font-black text-slate-800">
+                                        {{ $log->user->name ?? 'Deleted volunteer' }}
+                                    </h6>
+                                    <p class="text-[10px] text-slate-400">
+                                        {{ $log->user->email ?? 'No account attached' }} &middot; {{ $log->created_at->format('M d, Y g:i A') }}
+                                    </p>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    @if($log->intent)
+                                        <span class="bg-blue-100 text-jci-blue text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">
+                                            {{ $log->intent }}
+                                        </span>
+                                    @endif
+                                    @if(!is_null($log->confidence))
+                                        <span class="bg-slate-200 text-slate-600 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                                            {{ round($log->confidence * 100) }}%
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div class="bg-white border border-slate-200 rounded-xl p-3">
+                                    <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Volunteer asked</span>
+                                    <p class="text-xs text-slate-700 leading-relaxed">{{ $log->message }}</p>
+                                </div>
+                                <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-3">
+                                    <span class="block text-[9px] font-black uppercase text-jci-blue mb-1">Bot replied</span>
+                                    <p class="text-xs text-slate-700 leading-relaxed">{{ $log->response }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <i class="fa-solid fa-comment-slash text-slate-300 text-3xl mb-2"></i>
+                    <p class="text-xs text-slate-400">No volunteer chatbot conversations have been recorded yet.</p>
+                </div>
+            @endif
+        </div>
     </div>
 
     <!-- TAB 4: BROADCAST -->
@@ -182,8 +242,8 @@
             <h4 class="font-bold text-slate-800 flex items-center gap-2">
                 <i class="fa-solid fa-tower-broadcast text-jci-blue"></i> Global Broadcast Console
             </h4>
-            <span class="text-xs text-rose-500 font-bold flex items-center gap-1 animate-pulse">
-                <span class="h-2 w-2 rounded-full bg-rose-500"></span> Live Node
+            <span class="text-xs text-slate-400 font-bold flex items-center gap-1">
+                <span class="h-2 w-2 rounded-full bg-slate-400"></span> Logged Notice
             </span>
         </div>
         
@@ -198,11 +258,11 @@
                     </label>
                     <label class="border border-slate-200 rounded-xl p-3 flex items-center justify-center gap-2 cursor-pointer bg-slate-50/50 hover:bg-blue-50/30 hover:border-jci-blue transition">
                         <input type="checkbox" name="broadcast_email" checked class="rounded text-jci-blue focus:ring-jci-blue">
-                        <span class="text-xs font-semibold">Email Mailer</span>
+                        <span class="text-xs font-semibold">Email Record</span>
                     </label>
                     <label class="border border-slate-200 rounded-xl p-3 flex items-center justify-center gap-2 cursor-pointer bg-slate-50/50 hover:bg-blue-50/30 hover:border-jci-blue transition">
                         <input type="checkbox" name="broadcast_sms" checked class="rounded text-jci-blue focus:ring-jci-blue">
-                        <span class="text-xs font-semibold">SMS Gateway</span>
+                        <span class="text-xs font-semibold">SMS Record</span>
                     </label>
                 </div>
             </div>
@@ -213,11 +273,11 @@
             </div>
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Message Content</label>
-                <textarea name="body" required placeholder="Write the global notification contents to dispatch to all systems..." 
+                <textarea name="body" required placeholder="Write the administrative notice to record for traceability..." 
                           class="w-full border border-slate-200 rounded-lg p-2.5 text-xs h-24 focus:ring-1 focus:ring-jci-blue focus:outline-none resize-none"></textarea>
             </div>
             <button type="submit" class="bg-jci-blue hover:bg-jci-dark text-white font-bold text-xs py-3 px-6 rounded-xl transition duration-300 flex items-center gap-2">
-                <i class="fa-solid fa-paper-plane"></i> Dispatch Global Broadcast Notice
+                <i class="fa-solid fa-paper-plane"></i> Record Broadcast Notice
             </button>
         </form>
     </div>

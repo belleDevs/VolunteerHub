@@ -23,6 +23,7 @@ class User extends Authenticatable
         'role',
         'phone',
         'bio',
+        'profile_photo_path',
         'status',
         'availability',
     ];
@@ -73,9 +74,13 @@ class User extends Authenticatable
         return $this->hasMany(Certificate::class);
     }
 
+    public function taskApplications()
+    {
+        return $this->hasMany(TaskApplication::class);
+    }
+
     public function chatbotResponses()
     {
         return $this->hasMany(ChatbotResponse::class);
     }
 }
-

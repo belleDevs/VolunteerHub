@@ -4,12 +4,17 @@
         <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 sticky top-0 z-40 shadow-sm">
             <div class="max-w-7xl mx-auto flex justify-between items-center gap-2">
                 <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-jci-blue text-white flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">
-                        @php
-                            $initials = collect(explode(' ', Auth::user()->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
-                        @endphp
-                        {{ strtoupper($initials) }}
-                    </div>
+                    @php
+                        $navUser = Auth::user();
+                        $initials = collect(explode(' ', $navUser->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
+                    @endphp
+                    @if($navUser->profile_photo_path)
+                        <img src="{{ asset('storage/' . $navUser->profile_photo_path) }}" alt="{{ $navUser->name }}" class="h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover shrink-0 border border-slate-200">
+                    @else
+                        <div class="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-jci-blue text-white flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">
+                            {{ strtoupper($initials) }}
+                        </div>
+                    @endif
                     <div class="min-w-0">
                         <h3 class="font-black text-xs sm:text-sm text-slate-800 truncate">{{ Auth::user()->name }}</h3>
                         <p class="text-[9px] sm:text-[10px] text-emerald-600 font-semibold flex items-center gap-1">

@@ -59,12 +59,17 @@
             <!-- Sidebar Footer Info / Logout -->
             <div class="p-4 border-t border-slate-800 bg-slate-950/60">
                 <a href="{{ route('profile.show') }}" class="flex items-center gap-3 mb-4 group hover:bg-slate-800/60 p-2 rounded-xl transition">
-                    <div class="h-8 w-8 rounded-full bg-jci-accent text-jci-dark flex items-center justify-center font-bold text-xs shrink-0">
-                        @php
-                            $initials = collect(explode(' ', Auth::user()->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
-                        @endphp
-                        {{ strtoupper($initials) }}
-                    </div>
+                    @php
+                        $adminUser = Auth::user();
+                        $initials = collect(explode(' ', $adminUser->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
+                    @endphp
+                    @if($adminUser->profile_photo_path)
+                        <img src="{{ asset('storage/' . $adminUser->profile_photo_path) }}" alt="{{ $adminUser->name }}" class="h-8 w-8 rounded-full object-cover shrink-0 border border-slate-700">
+                    @else
+                        <div class="h-8 w-8 rounded-full bg-jci-accent text-jci-dark flex items-center justify-center font-bold text-xs shrink-0">
+                            {{ strtoupper($initials) }}
+                        </div>
+                    @endif
                     <div class="flex-grow min-w-0">
                         <h4 class="text-xs font-bold text-white truncate group-hover:text-jci-accent transition">{{ Auth::user()->name }}</h4>
                         <p class="text-[10px] text-slate-400 font-semibold group-hover:text-white flex items-center gap-1">

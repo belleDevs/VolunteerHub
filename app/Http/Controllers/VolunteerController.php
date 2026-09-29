@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Task;
 use App\Models\Assignment;
 use App\Models\Certificate;
+use App\Models\TaskApplication;
 use App\Models\ChatbotRule;
 use App\Models\ChatbotResponse;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class VolunteerController extends Controller
 
         // Get volunteer's task assignments (tasks they are assigned to)
         $assignments = Assignment::where('user_id', $volunteer->id)
-            ->with(['event', 'task.skills'])
+            ->with(['event.organization', 'task.skills'])
             ->get();
 
         // Get issued certificates
@@ -40,6 +41,39 @@ class VolunteerController extends Controller
             ->with('event')
             ->orderBy('issued_at', 'desc')
             ->get();
+
+        $assignmentStats = [
+            'active' => $assignments->where('status', 'approved')->count(),
+            'submitted' => $assignments->where('status', 'submitted')->count(),
+            'revision' => $assignments->where('status', 'rejected')->count(),
+            'completed' => $assignments->where('status', 'completed')->count(),
+            'hours' => $assignments->where('status', 'completed')->sum('hours_logged'),
+        ];
+
+        $assignedTaskIds = $assignments->pluck('task_id')->filter()->toArray();
+        $openTasks = Task::whereIn('status', ['pending', 'in_progress'])
+            ->whereNotIn('id', $assignedTaskIds)
+            ->whereDoesntHave('assignments', function ($query) {
+                $query->whereIn('status', ['approved', 'submitted', 'completed']);
+            })
+            ->with(['event.organization', 'skills', 'applications' => function ($query) use ($volunteer) {
+                $query->where('user_id', $volunteer->id);
+            }])
+            ->whereHas('event', function ($query) {
+                $query->where('status', 'published')
+                    ->where('end_time', '>=', Carbon::now());
+            })
+            ->orderBy('due_date')
+            ->get()
+            ->map(function ($task) use ($mySkillIds) {
+                $requiredSkillIds = $task->skills->pluck('id')->toArray();
+                $matchingSkillIds = array_intersect($requiredSkillIds, $mySkillIds);
+                $task->match_score = count($requiredSkillIds) > 0
+                    ? round((count($matchingSkillIds) / count($requiredSkillIds)) * 100)
+                    : 100;
+                $task->matched_skill_count = count($matchingSkillIds);
+                return $task;
+            });
 
         // AI Recommended Skills to Learn:
         // Skills needed in upcoming events/tasks that this volunteer doesn't have yet
@@ -77,8 +111,65 @@ class VolunteerController extends Controller
             'availableSkills',
             'assignments',
             'certificates',
+            'assignmentStats',
+            'openTasks',
             'recommendedSkills'
         ));
+    }
+
+    /**
+     * Apply for an open organization task.
+     */
+    public function applyForTask(Request $request, Task $task)
+    {
+        $request->validate([
+            'message' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $task->load('event');
+        abort_unless($task->event && $task->event->status === 'published' && $task->event->end_time->isFuture(), 422);
+
+        $alreadyAssigned = Assignment::where('user_id', Auth::id())
+            ->where('task_id', $task->id)
+            ->exists();
+
+        if ($alreadyAssigned) {
+            return redirect()->route('volunteer.dashboard')
+                ->with('error', 'This task is already assigned to you.');
+        }
+
+        $application = TaskApplication::updateOrCreate(
+            [
+                'user_id' => Auth::id(),
+                'task_id' => $task->id,
+            ],
+            [
+                'event_id' => $task->event_id,
+                'status' => 'pending',
+                'message' => $request->message,
+                'feedback' => null,
+                'reviewed_at' => null,
+                'reviewed_by' => null,
+            ]
+        );
+
+        DB::table('notifications')->insert([
+            'id' => Str::uuid(),
+            'type' => 'App\\Notifications\\GenericNotification',
+            'notifiable_type' => 'App\\Models\\User',
+            'notifiable_id' => $task->event->organization_id,
+            'data' => json_encode([
+                'title' => 'New Task Application',
+                'message' => Auth::user()->name . ' applied for "' . $task->title . '".',
+                'icon' => 'fa-user-check',
+            ]),
+            'read_at' => null,
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ]);
+
+        return redirect()->route('volunteer.dashboard')
+            ->with('success', 'Application submitted. The organization will review it before assigning the task.');
     }
 
     /**
@@ -134,66 +225,69 @@ class VolunteerController extends Controller
     }
 
     /**
-     * Mark assignment/task completed and issue certificate.
+     * Submit task completion proof for organization review.
      */
-    public function completeTask($id)
+    public function completeTask(Request $request, $id)
     {
+        $request->validate([
+            'completion_note' => ['required', 'string', 'max:1000'],
+            'completion_proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf,docx', 'max:5120'],
+        ]);
+
         $assignment = Assignment::where('user_id', Auth::id())
             ->where('id', $id)
-            ->with('event')
+            ->with(['event.organization', 'task'])
             ->firstOrFail();
 
-        // Check if assignment is already completed
         if ($assignment->status === 'completed') {
             return redirect()->route('volunteer.dashboard')
                 ->with('error', 'This duty has already been completed.');
         }
 
-        // Check if assignment is approved
-        if ($assignment->status !== 'approved') {
+        if ($assignment->status === 'submitted') {
+            return redirect()->route('volunteer.dashboard')
+                ->with('error', 'This duty is already submitted and waiting for organization review.');
+        }
+
+        if (!in_array($assignment->status, ['approved', 'rejected'])) {
             return redirect()->route('volunteer.dashboard')
                 ->with('error', 'You cannot complete a duty that has not been approved.');
         }
 
-        // 1. Mark assignment as completed
-        $assignment->status = 'completed';
-        $assignment->hours_logged = 4.00; // Mock 4 hours logged
-        $assignment->save();
-
-        // 2. Mark the associated task as completed
-        if ($assignment->task) {
-            $assignment->task->status = 'completed';
-            $assignment->task->save();
+        $proofPath = $assignment->completion_proof_path;
+        if ($request->hasFile('completion_proof')) {
+            $proofPath = $request->file('completion_proof')
+                ->store('task-proofs/' . Auth::id(), 'public');
         }
 
-        // 3. Auto-issue certificate
-        $certCode = 'JCI-WENSIES-' . strtoupper(Str::random(4)) . '-' . time();
-        Certificate::create([
-            'user_id' => Auth::id(),
-            'event_id' => $assignment->event_id,
-            'certificate_code' => $certCode,
-            'issued_at' => Carbon::now(),
-            'file_path' => 'certificates/' . $certCode . '.pdf'
-        ]);
+        $assignment->status = 'submitted';
+        $assignment->completion_note = $request->completion_note;
+        $assignment->completion_proof_path = $proofPath;
+        $assignment->submitted_at = Carbon::now();
+        $assignment->reviewed_at = null;
+        $assignment->reviewed_by = null;
+        $assignment->feedback = null;
+        $assignment->save();
 
-        // 4. Create Notification
-        DB::table('notifications')->insert([
-            'id' => Str::uuid(),
-            'type' => 'App\\Notifications\\GenericNotification',
-            'notifiable_type' => 'App\\Models\\User',
-            'notifiable_id' => Auth::id(),
-            'data' => json_encode([
-                'title' => 'Certificate Issued',
-                'message' => 'Congratulations! You earned a Certificate of Appreciation for "' . ($assignment->event ? $assignment->event->title : 'JCI Event') . '".',
-                'icon' => 'fa-award',
-            ]),
-            'read_at' => null,
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
+        if ($assignment->event && $assignment->event->organization) {
+            DB::table('notifications')->insert([
+                'id' => Str::uuid(),
+                'type' => 'App\\Notifications\\GenericNotification',
+                'notifiable_type' => 'App\\Models\\User',
+                'notifiable_id' => $assignment->event->organization->id,
+                'data' => json_encode([
+                    'title' => 'Task Submitted for Review',
+                    'message' => Auth::user()->name . ' submitted proof for "' . ($assignment->task->title ?? 'assigned task') . '".',
+                    'icon' => 'fa-clipboard-check',
+                ]),
+                'read_at' => null,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+        }
 
         return redirect()->route('volunteer.dashboard')
-            ->with('success', "Task marked completed! Certificate of appreciation issued.");
+            ->with('success', 'Task submitted for organization review. Your certificate will be issued after approval.');
     }
 
     /**
@@ -248,12 +342,13 @@ class VolunteerController extends Controller
             } elseif (str_contains($lowerMsg, 'duty') || str_contains($lowerMsg, 'task') || str_contains($lowerMsg, 'assignment')) {
                 $assignmentCount = Assignment::where('user_id', $volunteer->id)->count();
                 $pendingCount = Assignment::where('user_id', $volunteer->id)->where('status', 'approved')->count();
-                $response = "You have {$assignmentCount} total assignment(s) logged, with {$pendingCount} active duty task(s) ready to perform. Click 'Mark Completed' on your dashboard when done!";
+                $submittedCount = Assignment::where('user_id', $volunteer->id)->where('status', 'submitted')->count();
+                $response = "You have {$assignmentCount} total assignment(s), {$pendingCount} active duty task(s) ready to submit, and {$submittedCount} submission(s) waiting for organization review.";
                 $intent = 'tasks_info';
                 $confidence = 0.85;
             } elseif (str_contains($lowerMsg, 'certific') || str_contains($lowerMsg, 'cert') || str_contains($lowerMsg, 'award')) {
                 $certCount = Certificate::where('user_id', $volunteer->id)->count();
-                $response = "You have earned {$certCount} Certificate(s) of Appreciation. Official certificates are automatically generated as print-ready PDFs when you mark completed duties.";
+                $response = "You have earned {$certCount} Certificate(s) of Appreciation. Certificates are issued after your organization approves submitted task completion proof.";
                 $intent = 'certificates_info';
                 $confidence = 0.85;
             } elseif (str_contains($lowerMsg, 'hour') || str_contains($lowerMsg, 'time') || str_contains($lowerMsg, 'log')) {

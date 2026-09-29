@@ -14,12 +14,21 @@
             <!-- Top Navigation / Header -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                 <div class="flex items-center gap-4">
-                    <div class="h-14 w-14 rounded-2xl bg-jci-blue text-white flex items-center justify-center font-black text-xl shadow-md">
-                        @php
-                            $initials = collect(explode(' ', $user->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
-                        @endphp
-                        {{ strtoupper($initials) }}
-                    </div>
+                    @php
+                        $initials = collect(explode(' ', $user->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
+                    @endphp
+                    <label for="profile-photo-input" class="relative shrink-0 cursor-pointer group" title="Change profile photo">
+                        @if($user->profile_photo_path)
+                            <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="{{ $user->name }}" class="h-14 w-14 rounded-2xl object-cover shadow-md border border-slate-200">
+                        @else
+                            <div class="h-14 w-14 rounded-2xl bg-jci-blue text-white flex items-center justify-center font-black text-xl shadow-md">
+                                {{ strtoupper($initials) }}
+                            </div>
+                        @endif
+                        <span class="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white border border-slate-200 text-jci-blue shadow-sm flex items-center justify-center group-hover:bg-blue-50 transition">
+                            <i class="fa-solid fa-camera text-[10px]"></i>
+                        </span>
+                    </label>
                     <div>
                         <div class="flex items-center gap-2">
                             <h2 class="text-xl font-extrabold text-slate-800">{{ $user->name }}</h2>
@@ -46,13 +55,20 @@
 
             <!-- Profile Edit Form -->
             <div class="glass-card premium-shadow rounded-3xl p-6 md:p-8 bg-white border border-slate-200">
-                <form action="{{ route('profile.update') }}" method="POST" class="space-y-6">
+                <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
+                    <input id="profile-photo-input" type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp" class="hidden">
 
                     <div>
-                        <h3 class="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
-                            <i class="fa-solid fa-user-gear text-jci-blue"></i> General Information
+                        <h3 class="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3 flex items-center justify-between gap-2">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-user-gear text-jci-blue"></i> General Information
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-400">Click avatar to change photo</span>
                         </h3>
+                        @error('profile_photo')
+                            <p class="text-[10px] text-rose-500 mt-2 font-bold">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

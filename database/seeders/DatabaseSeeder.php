@@ -59,48 +59,29 @@ class DatabaseSeeder extends Seeder
             'bio' => 'Empowering Surigaonon women through dynamic leadership, community projects, and responsive socioeconomic outreach.'
         ]);
 
-        // Juan Dela Cruz (Volunteer)
-        $juan = User::create([
-            'name' => 'Juan Dela Cruz',
-            'email' => 'juan@volunteerhub.ph',
+        // Active Volunteers
+        $lean = User::create([
+            'name' => 'Lean Jane Lerio',
+            'email' => 'llerio1@ssct.edu.ph',
             'password' => Hash::make('password'),
             'role' => 'volunteer',
             'status' => 'approved',
+            'availability' => 'active',
             'phone' => '09123456789',
-            'bio' => 'Passionate civic volunteer based in Surigao City, Caraga Region.'
+            'bio' => 'Active civic volunteer supporting community outreach and event assistance.'
         ]);
 
-        // Associate Juan's skills
-        $juan->skills()->attach([
+        $lean->skills()->attach([
             $skills['First Aid Responder']->id,
             $skills['Community Outreach']->id,
         ]);
 
-        // Extra Volunteers for Skill Engine Demonstration
         $vols = [
             [
-                'name' => 'Maria Santos',
-                'email' => 'maria@volunteerhub.ph',
+                'name' => 'Larra Vel Edradan',
+                'email' => 'ledradan6@ssct.edu.ph',
                 'skills' => ['Public Relations', 'Event Coordinating'],
-                'bio' => 'Communication specialist with event coordination experience.'
-            ],
-            [
-                'name' => 'Pedro Penduko',
-                'email' => 'pedro@volunteerhub.ph',
-                'skills' => ['Coastal Bench Building', 'Community Outreach'],
-                'bio' => 'Skilled carpenter interested in coastal infrastructure.'
-            ],
-            [
-                'name' => 'Ana Dimasalang',
-                'email' => 'ana@volunteerhub.ph',
-                'skills' => ['Disaster Response', 'First Aid Responder'],
-                'bio' => 'Certified paramedic and rescue logistics specialist.'
-            ],
-            [
-                'name' => 'Kiko Matsing',
-                'email' => 'kiko@volunteerhub.ph',
-                'skills' => ['Mangrove Planting', 'Community Outreach'],
-                'bio' => 'Eco-activist focused on coastal ecosystem regeneration.'
+                'bio' => 'Active civic volunteer supporting registration, coordination, and program logistics.'
             ]
         ];
 
@@ -111,6 +92,7 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'volunteer',
                 'status' => 'approved',
+                'availability' => 'active',
                 'bio' => $v['bio']
             ]);
             
@@ -143,9 +125,9 @@ class DatabaseSeeder extends Seeder
             'title' => 'Coastal Clean-up & Mangrove Planting',
             'description' => 'Join us as we clean the Surigao City shoreline and plant mangrove saplings to protect our coastal communities from rising tides.',
             'location' => 'Surigao City Coastline',
-            'status' => 'published',
-            'start_time' => Carbon::now()->addDays(5)->setTime(8, 0),
-            'end_time' => Carbon::now()->addDays(5)->setTime(12, 0),
+            'status' => 'completed',
+            'start_time' => Carbon::create(2026, 9, 4, 8, 0),
+            'end_time' => Carbon::create(2026, 9, 4, 12, 0),
             'capacity' => 50,
         ]);
 
@@ -155,8 +137,8 @@ class DatabaseSeeder extends Seeder
             'description' => 'A seminar designed to equip the next generation of Surigaonon leaders with socio-civic leadership capabilities and project planning tools.',
             'location' => 'Surigao City Gymnasium',
             'status' => 'published',
-            'start_time' => Carbon::now()->addDays(10)->setTime(9, 0),
-            'end_time' => Carbon::now()->addDays(10)->setTime(16, 0),
+            'start_time' => Carbon::create(2026, 9, 12, 9, 0),
+            'end_time' => Carbon::create(2026, 9, 20, 16, 0),
             'capacity' => 100,
         ]);
 
@@ -167,8 +149,8 @@ class DatabaseSeeder extends Seeder
             'title' => 'Mangrove Sapling Distribution',
             'description' => 'Distributing mangrove saplings to volunteers at the shoreline stations.',
             'priority' => 'medium',
-            'status' => 'pending',
-            'due_date' => $event1->start_time->subHours(1),
+            'status' => 'completed',
+            'due_date' => Carbon::create(2026, 9, 4, 7, 0),
         ]);
         $task1->skills()->attach([
             $skills['Mangrove Planting']->id,
@@ -180,8 +162,8 @@ class DatabaseSeeder extends Seeder
             'title' => 'First Aid Station Setup',
             'description' => 'Setup and manage the emergency first aid booth near the planting zone.',
             'priority' => 'high',
-            'status' => 'pending',
-            'due_date' => $event1->start_time,
+            'status' => 'completed',
+            'due_date' => Carbon::create(2026, 9, 4, 8, 0),
         ]);
         $task2->skills()->attach([
             $skills['First Aid Responder']->id,
@@ -192,8 +174,8 @@ class DatabaseSeeder extends Seeder
             'title' => 'Trash Bag Sorting',
             'description' => 'Distributing bags and organizing the sorted garbage categories.',
             'priority' => 'low',
-            'status' => 'pending',
-            'due_date' => $event1->end_time,
+            'status' => 'completed',
+            'due_date' => Carbon::create(2026, 9, 4, 12, 0),
         ]);
         $task3->skills()->attach([
             $skills['Community Outreach']->id,
@@ -205,8 +187,8 @@ class DatabaseSeeder extends Seeder
             'title' => 'Seminar Registration Booth',
             'description' => 'Welcoming participants, verifying lists, and distributing badges.',
             'priority' => 'low',
-            'status' => 'pending',
-            'due_date' => $event2->start_time,
+            'status' => 'in_progress',
+            'due_date' => Carbon::create(2026, 9, 12, 9, 0),
         ]);
         $task4->skills()->attach([
             $skills['Public Relations']->id,
@@ -217,32 +199,33 @@ class DatabaseSeeder extends Seeder
             'title' => 'Sound System Coordination',
             'description' => 'Setup audio microphones, projection screen, and sound levels.',
             'priority' => 'medium',
-            'status' => 'pending',
-            'due_date' => $event2->start_time->subHours(2),
+            'status' => 'in_progress',
+            'due_date' => Carbon::create(2026, 9, 12, 7, 0),
         ]);
         $task5->skills()->attach([
             $skills['Event Coordinating']->id,
         ]);
 
         // 5. Seed Assignments
-        // Assign Juan to tasks
+        // Assign Lean to completed and ongoing work
         Assignment::create([
-            'user_id' => $juan->id,
+            'user_id' => $lean->id,
             'event_id' => $event1->id,
             'task_id' => $task2->id, // First Aid
-            'status' => 'approved',
+            'status' => 'completed',
+            'hours_logged' => 4.00,
         ]);
 
         Assignment::create([
-            'user_id' => $juan->id,
+            'user_id' => $lean->id,
             'event_id' => $event2->id,
             'task_id' => $task4->id, // Registration
             'status' => 'approved',
         ]);
 
-        // Assign Maria to sound coordination
+        // Assign Larra to ongoing coordination
         Assignment::create([
-            'user_id' => User::where('email', 'maria@volunteerhub.ph')->first()->id,
+            'user_id' => User::where('email', 'ledradan6@ssct.edu.ph')->first()->id,
             'event_id' => $event2->id,
             'task_id' => $task5->id,
             'status' => 'approved',
@@ -293,10 +276,10 @@ class DatabaseSeeder extends Seeder
                 'id' => \Illuminate\Support\Str::uuid(),
                 'type' => 'App\\Notifications\\GenericNotification',
                 'notifiable_type' => 'App\\Models\\User',
-                'notifiable_id' => $juan->id,
+                'notifiable_id' => $lean->id,
                 'data' => json_encode([
                     'title' => 'Welcome to VolunteerHub',
-                    'message' => 'Your volunteer account has been approved. Start exploring local JCI duties!',
+                    'message' => 'Your volunteer account has been approved. Start exploring local community duties!',
                     'icon' => 'fa-hands-holding-child',
                 ]),
                 'read_at' => null,
@@ -307,10 +290,10 @@ class DatabaseSeeder extends Seeder
                 'id' => \Illuminate\Support\Str::uuid(),
                 'type' => 'App\\Notifications\\GenericNotification',
                 'notifiable_type' => 'App\\Models\\User',
-                'notifiable_id' => $juan->id,
+                'notifiable_id' => $lean->id,
                 'data' => json_encode([
                     'title' => 'New Task Assigned',
-                    'message' => 'You have been assigned to the task "First Aid Station Setup" for the "Coastal Clean-up" event.',
+                    'message' => 'You have been assigned to the task "Seminar Registration Booth" for the "Youth Leadership & Civic Seminar" event.',
                     'icon' => 'fa-tasks',
                 ]),
                 'read_at' => null,

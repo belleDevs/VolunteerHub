@@ -7,12 +7,16 @@
             <div class="h-20 bg-gradient-to-tr from-jci-blue to-jci-light absolute top-0 left-0 w-full"></div>
             
             <div class="relative mt-8 mb-4">
-                <div class="w-24 h-24 rounded-full border-4 border-white mx-auto bg-gradient-to-tr from-slate-900 via-jci-dark to-jci-blue flex items-center justify-center font-extrabold text-white text-3xl shadow-md">
-                    @php
-                        $initials = collect(explode(' ', $volunteer->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
-                    @endphp
-                    {{ strtoupper($initials) }}
-                </div>
+                @php
+                    $initials = collect(explode(' ', $volunteer->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
+                @endphp
+                @if($volunteer->profile_photo_path)
+                    <img src="{{ asset('storage/' . $volunteer->profile_photo_path) }}" alt="{{ $volunteer->name }}" class="w-24 h-24 rounded-full border-4 border-white mx-auto object-cover shadow-md">
+                @else
+                    <div class="w-24 h-24 rounded-full border-4 border-white mx-auto bg-gradient-to-tr from-slate-900 via-jci-dark to-jci-blue flex items-center justify-center font-extrabold text-white text-3xl shadow-md">
+                        {{ strtoupper($initials) }}
+                    </div>
+                @endif
                 <span class="absolute bottom-1 right-1/3 bg-emerald-500 text-white h-5 w-5 rounded-full border-2 border-white flex items-center justify-center text-[8px]"><i class="fa-solid fa-check"></i></span>
             </div>
             
@@ -33,21 +37,30 @@
                 </a>
             </div>
 
-            @php
-                $completedHours = $assignments->where('status', 'completed')->sum('hours_logged');
-                $targetHours = 20; // Prototype goal
-                $progressPercent = min(100, round(($completedHours / $targetHours) * 100));
-            @endphp
-            <!-- Civic Impact Tracker -->
+            <!-- Volunteer Record Summary -->
             <div class="mt-4 px-4 py-3 bg-slate-50 rounded-2xl border border-slate-100 text-left">
-                <div class="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
-                    <span>Civic Impact Tracker</span>
-                    <span class="text-jci-blue font-extrabold">{{ $completedHours }} / {{ $targetHours }} Hrs</span>
+                <div class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">
+                    My Volunteer Record
                 </div>
-                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div class="bg-gradient-to-r from-jci-blue to-jci-light h-full rounded-full transition-all duration-500" style="width: {{ $progressPercent }}%"></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-white border border-slate-100 rounded-xl p-2">
+                        <span class="block text-[9px] text-slate-400 font-bold uppercase">Active</span>
+                        <span class="text-base font-black text-amber-600">{{ $assignmentStats['active'] }}</span>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-xl p-2">
+                        <span class="block text-[9px] text-slate-400 font-bold uppercase">For Review</span>
+                        <span class="text-base font-black text-sky-600">{{ $assignmentStats['submitted'] }}</span>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-xl p-2">
+                        <span class="block text-[9px] text-slate-400 font-bold uppercase">Completed</span>
+                        <span class="text-base font-black text-emerald-600">{{ $assignmentStats['completed'] }}</span>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-xl p-2">
+                        <span class="block text-[9px] text-slate-400 font-bold uppercase">Hours</span>
+                        <span class="text-base font-black text-jci-blue">{{ number_format($assignmentStats['hours'], 2) }}</span>
+                    </div>
                 </div>
-                <span class="text-[8px] text-slate-400 mt-1 block font-semibold">JCI Surigao Bronze Milestone</span>
+                <span class="text-[8px] text-slate-400 mt-2 block font-semibold">Hours are recorded only after organization approval.</span>
             </div>
             
             <!-- Skill Chips Managed dynamically -->
@@ -79,7 +92,7 @@
                     <p class="text-[11px] text-slate-400 italic">No skills registered. Click edit to add skills.</p>
                 @endif
 
-                <!-- Input to mock add skills -->
+                <!-- Add skills form -->
                 <div id="add-skill-control" class="hidden mt-3 pt-3 border-t border-slate-100">
                     <form action="{{ route('volunteer.skills.store') }}" method="POST" class="space-y-2">
                         @csrf
@@ -185,13 +198,87 @@
 
     <!-- Right Panel: My Active Task Assignments & Certificate Downloads -->
     <div class="lg:col-span-8 space-y-6">
+        <!-- Open Task Applications -->
+        <div class="glass-card premium-shadow rounded-3xl p-6 space-y-4 animate-fade-in-up">
+            <div>
+                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
+                    <i class="fa-solid fa-hand-pointer text-jci-blue"></i> Open Tasks You Can Apply For
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">Apply to tasks you want to help with. The organization reviews applicants before assigning duties.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @if($openTasks->count() > 0)
+                    @foreach($openTasks as $task)
+                        @php
+                            $application = $task->applications->first();
+                            $matchClass = $task->match_score >= 80 ? 'bg-emerald-100 text-emerald-700' : ($task->match_score >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600');
+                            $matchLabel = $task->match_score >= 80 ? 'Strong Match' : ($task->match_score >= 50 ? 'Partial Match' : 'Skills Needed');
+                        @endphp
+                        <div class="p-4 bg-slate-50/50 rounded-2xl border border-slate-200/80 premium-shadow space-y-3">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <h4 class="text-sm font-black text-slate-800">{{ $task->title }}</h4>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">{{ $task->event->title }}</p>
+                                    <p class="text-[10px] text-slate-400 mt-0.5">
+                                        {{ $task->event->organization->name ?? 'Organization' }} • {{ $task->due_date ? $task->due_date->format('M d, g:i A') : $task->event->start_time->format('M d, g:i A') }}
+                                    </p>
+                                </div>
+                                <span class="{{ $matchClass }} text-[9px] font-black px-2 py-1 rounded-lg whitespace-nowrap">
+                                    {{ $matchLabel }} {{ $task->match_score }}%
+                                </span>
+                            </div>
+
+                            <div class="flex flex-wrap gap-1">
+                                @foreach($task->skills as $skill)
+                                    <span class="bg-white border border-slate-200 text-slate-600 text-[8px] font-bold px-1.5 py-0.5 rounded">
+                                        {{ $skill->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+
+                            @if($application)
+                                <div class="bg-blue-50 border border-blue-100 text-jci-blue rounded-xl p-3 text-[10px] font-bold">
+                                    Application status: {{ ucfirst($application->status) }}
+                                    @if($application->feedback)
+                                        <span class="block text-slate-500 mt-1">Feedback: {{ $application->feedback }}</span>
+                                    @endif
+                                </div>
+                            @else
+                                <form action="{{ route('volunteer.tasks.apply', $task->id) }}" method="POST" class="space-y-2">
+                                    @csrf
+                                    <textarea name="message" rows="2" maxlength="1000"
+                                              placeholder="Optional: tell the organization why you want this task..."
+                                              class="w-full border border-slate-200 rounded-lg p-2 text-[11px] focus:ring-1 focus:ring-jci-blue focus:outline-none resize-none"></textarea>
+                                    <button type="submit" class="bg-jci-blue hover:bg-jci-dark text-white text-[10px] font-black px-3 py-1.5 rounded-lg transition">
+                                        Apply for Task
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    @endforeach
+                @else
+                    <div class="col-span-full p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <i class="fa-solid fa-clipboard-list text-slate-300 text-4xl mb-2"></i>
+                        <p class="text-xs text-slate-400 font-medium">No open tasks are accepting applications right now.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+
         <!-- My Task Workspace -->
         <div class="glass-card premium-shadow rounded-3xl p-6 space-y-4 animate-fade-in-up">
             <div>
                 <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base">
                     <i class="fa-solid fa-list-check text-jci-blue"></i> My Tasks & Duty Assignments
                 </h3>
-                <p class="text-xs text-slate-400 mt-0.5">Marking tasks "Completed" triggers automated certificate generation.</p>
+                <p class="text-xs text-slate-400 mt-0.5">Submit completion proof after doing the task. Certificates are issued after organization approval.</p>
+                <div class="flex flex-wrap gap-1.5 mt-3">
+                    <span class="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Active</span>
+                    <span class="bg-sky-100 text-sky-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">For Review</span>
+                    <span class="bg-rose-100 text-rose-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Revise</span>
+                    <span class="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Completed</span>
+                </div>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="volunteer-tasks-grid">
@@ -223,6 +310,10 @@
 
                                         @if($assign->status === 'completed')
                                             <span class="bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded font-black uppercase">Completed</span>
+                                        @elseif($assign->status === 'submitted')
+                                            <span class="bg-sky-500 text-white text-[9px] px-2 py-0.5 rounded font-black uppercase">For Review</span>
+                                        @elseif($assign->status === 'rejected')
+                                            <span class="bg-rose-500 text-white text-[9px] px-2 py-0.5 rounded font-black uppercase">Revise</span>
                                         @else
                                             <span class="bg-amber-500 text-white text-[9px] px-2 py-0.5 rounded font-black uppercase">Active</span>
                                         @endif
@@ -233,6 +324,16 @@
                                 <p class="text-[11px] text-slate-400 italic font-medium leading-normal">
                                     Project: {{ $assign->event->title }}
                                 </p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-slate-500">
+                                    <span class="flex items-center gap-1">
+                                        <i class="fa-solid fa-building-ngo text-slate-400"></i>
+                                        {{ $assign->event->organization->name ?? 'Organization' }}
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i class="fa-solid fa-calendar-day text-slate-400"></i>
+                                        {{ $assign->event->start_time->format('M d, g:i A') }}
+                                    </span>
+                                </div>
                                 
                                 <div class="flex flex-wrap gap-1 pt-1">
                                     @foreach($assign->task->skills as $tsk)
@@ -243,20 +344,45 @@
                                 </div>
                             </div>
                             
-                            <div class="mt-4 pt-3 border-t border-slate-200/60 flex justify-between items-center">
+                            <div class="mt-4 pt-3 border-t border-slate-200/60">
                                 @if($assign->status === 'completed')
                                     <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                                        <i class="fa-solid fa-circle-check text-xs"></i> 4.00 Hours Logged
+                                        <i class="fa-solid fa-circle-check text-xs"></i> {{ number_format($assign->hours_logged, 2) }} Hours Logged
                                     </span>
+                                    @if($assign->feedback)
+                                        <p class="text-[10px] text-slate-500 mt-1">Org feedback: {{ $assign->feedback }}</p>
+                                    @endif
+                                @elseif($assign->status === 'submitted')
+                                    <div class="text-[10px] text-sky-600 font-bold flex items-center gap-1">
+                                        <i class="fa-solid fa-hourglass-half"></i> Submitted for organization review
+                                    </div>
+                                    @if($assign->completion_note)
+                                        <p class="text-[10px] text-slate-500 mt-1">Submitted note: {{ $assign->completion_note }}</p>
+                                    @endif
+                                    @if($assign->submitted_at)
+                                        <p class="text-[10px] text-slate-400 mt-1">Submitted {{ $assign->submitted_at->format('M d, Y g:i A') }}</p>
+                                    @endif
                                 @else
-                                    <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                                    <div class="text-[10px] text-slate-400 font-semibold flex items-center gap-1 mb-2">
                                         <i class="fa-solid fa-clock"></i> Due: {{ $assign->task->due_date ? $assign->task->due_date->format('M d') : 'Event Day' }}
-                                    </span>
+                                    </div>
+                                    @if($assign->status === 'rejected' && $assign->feedback)
+                                        <div class="mb-2 bg-rose-50 border border-rose-100 text-rose-700 rounded-xl p-2 text-[10px]">
+                                            <span class="font-black block mb-0.5">Revision requested</span>
+                                            {{ $assign->feedback }}
+                                        </div>
+                                    @endif
                                     
-                                    <form action="{{ route('volunteer.tasks.complete', $assign->id) }}" method="POST">
+                                    <form action="{{ route('volunteer.tasks.complete', $assign->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
                                         @csrf
+                                        <textarea name="completion_note" required rows="2" maxlength="1000"
+                                                  placeholder="Describe what you did, where, and any result/output..."
+                                                  class="w-full border border-slate-200 rounded-lg p-2 text-[11px] focus:ring-1 focus:ring-jci-blue focus:outline-none resize-none">{{ old('completion_note') }}</textarea>
+                                        <p class="text-[9px] text-slate-400">Attach optional proof such as photo, PDF, or document. The organization will review this before issuing a certificate.</p>
+                                        <input type="file" name="completion_proof" accept=".jpg,.jpeg,.png,.pdf,.docx"
+                                               class="w-full text-[10px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-slate-200 file:px-2 file:py-1 file:text-[10px] file:font-bold file:text-slate-600">
                                         <button type="submit" class="bg-jci-blue hover:bg-jci-dark text-white text-[10px] font-extrabold px-3 py-1.5 rounded-lg transition duration-200">
-                                            Complete Duty
+                                            Submit for Review
                                         </button>
                                     </form>
                                 @endif

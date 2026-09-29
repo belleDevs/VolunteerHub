@@ -41,7 +41,15 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('org')->middleware('role:organization')->group(function () {
         Route::get('/dashboard', [OrgController::class, 'dashboard'])->name('org.dashboard');
         Route::post('/events', [OrgController::class, 'storeEvent'])->name('org.events.store');
+        Route::post('/assignments', [OrgController::class, 'assignVolunteer'])->name('org.assignments.store');
+        Route::post('/tasks/{task}/outreach', [OrgController::class, 'sendTaskOutreach'])->name('org.tasks.outreach');
+        Route::post('/applications/{application}/approve', [OrgController::class, 'approveApplication'])->name('org.applications.approve');
+        Route::post('/applications/{application}/reject', [OrgController::class, 'rejectApplication'])->name('org.applications.reject');
         Route::post('/documents', [OrgController::class, 'uploadDocument'])->name('org.documents.store');
+        Route::get('/documents/{document}/download', [OrgController::class, 'downloadDocument'])->name('org.documents.download');
+        Route::get('/assignments/{assignment}/proof', [OrgController::class, 'downloadCompletionProof'])->name('org.assignments.proof');
+        Route::post('/assignments/{assignment}/approve', [OrgController::class, 'approveCompletion'])->name('org.assignments.approve');
+        Route::post('/assignments/{assignment}/reject', [OrgController::class, 'rejectCompletion'])->name('org.assignments.reject');
     });
 
     // Volunteer Group
@@ -50,6 +58,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/skills', [VolunteerController::class, 'addSkill'])->name('volunteer.skills.store');
         Route::delete('/skills/{id}', [VolunteerController::class, 'removeSkill'])->name('volunteer.skills.destroy');
         Route::post('/availability', [VolunteerController::class, 'toggleAvailability'])->name('volunteer.availability.toggle');
+        Route::post('/tasks/{task}/apply', [VolunteerController::class, 'applyForTask'])->name('volunteer.tasks.apply');
         Route::post('/tasks/{id}/complete', [VolunteerController::class, 'completeTask'])->name('volunteer.tasks.complete');
         Route::get('/certificates/{id}/download', [VolunteerController::class, 'downloadCertificate'])->name('volunteer.certificates.download');
         Route::post('/chatbot/ask', [VolunteerController::class, 'askChatbot'])->name('volunteer.chatbot.ask');

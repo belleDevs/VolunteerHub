@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Event;
 use App\Models\Task;
+use App\Models\Assignment;
+use App\Models\Certificate;
 use App\Models\ChatbotRule;
+use App\Models\ChatbotResponse;
 use App\Models\RecordArchive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,13 +24,38 @@ class AdminController extends Controller
      */
     public function dashboard(Request $request)
     {
-        $totalVolunteers = User::where('role', 'volunteer')->count();
-        $activeEvents = Event::where('status', 'published')->count();
+        $now = Carbon::now();
+
+        Event::where('status', 'published')
+            ->where('end_time', '<', $now)
+            ->update(['status' => 'completed']);
+
+        $totalVolunteers = User::where('role', 'volunteer')
+            ->where('status', 'approved')
+            ->count();
+
+        $activeEvents = Event::where('status', 'published')
+            ->where('end_time', '>=', $now)
+            ->count();
+
         $approvedOrgs = User::where('role', 'organization')->where('status', 'approved')->count();
-        $openTasks = Task::whereIn('status', ['pending', 'in_progress'])->count();
+        $openTasks = Task::whereIn('status', ['pending', 'in_progress'])
+            ->whereHas('event', function ($query) use ($now) {
+                $query->where('status', 'published')
+                    ->where('end_time', '>=', $now);
+            })
+            ->count();
 
         $pendingOrgs = User::where('role', 'organization')->where('status', 'pending')->get();
+        $pendingCompletionReviews = Assignment::where('status', 'submitted')->count();
+        $issuedCertificates = Certificate::count();
+        $chatbotMessageCount = ChatbotResponse::count();
+        $broadcastLogCount = RecordArchive::where('table_name', 'broadcasts')->count();
         $chatbotRules = ChatbotRule::all();
+        $chatbotLogs = ChatbotResponse::with('user')
+            ->latest()
+            ->take(30)
+            ->get();
 
         // Get active tab from session or request (default to dashboard)
         $activeTab = $request->query('tab', 'dashboard');
@@ -38,7 +66,12 @@ class AdminController extends Controller
             'approvedOrgs',
             'openTasks',
             'pendingOrgs',
+            'pendingCompletionReviews',
+            'issuedCertificates',
+            'chatbotMessageCount',
+            'broadcastLogCount',
             'chatbotRules',
+            'chatbotLogs',
             'activeTab'
         ));
     }
@@ -143,13 +176,12 @@ class AdminController extends Controller
         if ($request->has('broadcast_web'))
             $mediums[] = 'Web Portal';
         if ($request->has('broadcast_email'))
-            $mediums[] = 'Email Mailer';
+            $mediums[] = 'Email Record';
         if ($request->has('broadcast_sms'))
-            $mediums[] = 'SMS Gateway';
+            $mediums[] = 'SMS Record';
 
         $mediumsStr = count($mediums) > 0 ? implode(', ', $mediums) : 'No channels selected';
 
-        // Simulating broadcast log in record_archives for traceability
         RecordArchive::create([
             'table_name' => 'broadcasts',
             'record_id' => time(),
@@ -159,10 +191,10 @@ class AdminController extends Controller
                 'mediums' => $mediums
             ],
             'archived_by' => Auth::id(),
-            'reason' => "Global broadcast sent via: {$mediumsStr}"
+            'reason' => "Broadcast notice recorded for: {$mediumsStr}"
         ]);
 
         return redirect()->route('admin.dashboard', ['tab' => 'broadcast'])
-            ->with('success', "Broadcast dispatch notice sent successfully via {$mediumsStr}.");
+            ->with('success', "Broadcast notice recorded successfully for {$mediumsStr}.");
     }
 }
