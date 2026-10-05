@@ -2,43 +2,44 @@
 
     <!-- Left Panel: Profile Management, My Skills & Dashboard Info -->
     <div class="lg:col-span-4 space-y-6">
-        <!-- User Mini Profile -->
-        <div class="glass-card premium-shadow rounded-3xl p-6 text-center relative overflow-hidden animate-fade-in-up">
-            <div class="h-20 bg-gradient-to-tr from-jci-blue to-jci-light absolute top-0 left-0 w-full"></div>
-            
-            <div class="relative mt-8 mb-4">
-                @php
-                    $initials = collect(explode(' ', $volunteer->name))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
-                @endphp
-                @if($volunteer->profile_photo_path)
-                    <img src="{{ asset('storage/' . $volunteer->profile_photo_path) }}" alt="{{ $volunteer->name }}" class="w-24 h-24 rounded-full border-4 border-white mx-auto object-cover shadow-md">
-                @else
-                    <div class="w-24 h-24 rounded-full border-4 border-white mx-auto bg-gradient-to-tr from-slate-900 via-jci-dark to-jci-blue flex items-center justify-center font-extrabold text-white text-3xl shadow-md">
-                        {{ strtoupper($initials) }}
-                    </div>
-                @endif
-                <span class="absolute bottom-1 right-1/3 bg-emerald-500 text-white h-5 w-5 rounded-full border-2 border-white flex items-center justify-center text-[8px]"><i class="fa-solid fa-check"></i></span>
-            </div>
-            
-            <h3 class="text-lg font-extrabold text-slate-800">{{ $volunteer->name }}</h3>
-            <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
-                <i class="fa-solid fa-location-dot"></i> Surigao City, Caraga Region
-            </p>
-            @if($volunteer->phone)
-                <p class="text-[11px] text-slate-400 mt-1"><i class="fa-solid fa-phone text-[10px]"></i> {{ $volunteer->phone }}</p>
-            @endif
-            @if($volunteer->bio)
-                <p class="text-xs text-slate-600 italic mt-2 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 text-left">{{ $volunteer->bio }}</p>
-            @endif
-
-            <div class="mt-3">
-                <a href="{{ route('profile.show') }}" class="inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-jci-blue border border-sky-200 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition shadow-xs">
-                    <i class="fa-solid fa-user-pen text-[11px]"></i> Edit Profile
+        <!-- Volunteer Snapshot -->
+        <div class="glass-card premium-shadow rounded-3xl p-6 relative overflow-hidden animate-fade-in-up">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-id-badge text-jci-blue"></i> Volunteer Snapshot
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Status, skills, and verified contribution record.</p>
+                </div>
+                <a href="{{ route('profile.show') }}" class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-xl bg-sky-50 hover:bg-sky-100 text-jci-blue border border-sky-100 transition" title="Edit profile">
+                    <i class="fa-solid fa-user-pen text-xs"></i>
                 </a>
             </div>
 
+            @if($volunteer->bio || $volunteer->phone)
+                <div class="mt-4 bg-slate-50/80 border border-slate-100 rounded-2xl p-3 space-y-1.5">
+                    @if($volunteer->bio)
+                        <p class="text-xs text-slate-600 leading-relaxed">{{ $volunteer->bio }}</p>
+                    @endif
+                    @if($volunteer->phone)
+                        <p class="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5">
+                            <i class="fa-solid fa-phone text-[9px]"></i> {{ $volunteer->phone }}
+                        </p>
+                    @endif
+                </div>
+            @endif
+
+            @if($volunteer->primaryOrganization)
+                <div class="mt-4 bg-blue-50/70 border border-blue-100 rounded-2xl p-3">
+                    <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Organization Affiliation</span>
+                    <p class="text-xs font-bold text-jci-blue flex items-center gap-1.5">
+                        <i class="fa-solid fa-building-ngo text-[10px]"></i> {{ $volunteer->primaryOrganization->name }}
+                    </p>
+                </div>
+            @endif
+
             <!-- Volunteer Record Summary -->
-            <div class="mt-4 px-4 py-3 bg-slate-50 rounded-2xl border border-slate-100 text-left">
+            <div class="mt-4 px-4 py-3 bg-slate-50 rounded-2xl border border-slate-100">
                 <div class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">
                     My Volunteer Record
                 </div>
@@ -176,24 +177,6 @@
             </div>
         </div>
 
-        <!-- AI Chatbot Interactive Card -->
-        <div class="glass-card premium-shadow rounded-3xl p-6 bg-gradient-to-br from-jci-blue via-jci-dark to-slate-900 text-white space-y-3.5 animate-fade-in-up" style="animation-delay: 150ms;">
-            <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-jci-accent text-xl">
-                    <i class="fa-solid fa-robot"></i>
-                </div>
-                <div>
-                    <h4 class="font-extrabold text-sm text-white">Need Quick Answers?</h4>
-                    <p class="text-[10px] text-sky-200">JCI Volunteer AI Assistant</p>
-                </div>
-            </div>
-            <p class="text-xs text-slate-200 leading-relaxed">
-                Get instant guidance on your duties, certificates, skill matching, and JCI Surigao Wensies programs.
-            </p>
-            <button type="button" onclick="toggleVolunteerChatbot()" class="w-full bg-white text-jci-dark hover:bg-sky-50 font-bold text-xs py-2.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-md">
-                <i class="fa-solid fa-comments text-jci-blue"></i> Launch AI Assistant Chat
-            </button>
-        </div>
     </div>
 
     <!-- Right Panel: My Active Task Assignments & Certificate Downloads -->
@@ -281,9 +264,24 @@
                 </div>
             </div>
             
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-slate-50/80 border border-slate-200 rounded-2xl p-3">
+                    <span class="text-[9px] font-black uppercase text-slate-400">Active Duties</span>
+                    <p class="text-xl font-black text-slate-800">{{ $activeAssignments->count() }}</p>
+                </div>
+                <div class="bg-slate-50/80 border border-slate-200 rounded-2xl p-3">
+                    <span class="text-[9px] font-black uppercase text-slate-400">Completed</span>
+                    <p class="text-xl font-black text-slate-800">{{ $completedAssignments->count() }}</p>
+                </div>
+                <div class="bg-slate-50/80 border border-slate-200 rounded-2xl p-3">
+                    <span class="text-[9px] font-black uppercase text-slate-400">Hours Logged</span>
+                    <p class="text-xl font-black text-slate-800">{{ number_format($assignmentStats['hours'], 1) }}</p>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="volunteer-tasks-grid">
-                @if($assignments->count() > 0)
-                    @foreach($assignments as $assign)
+                @if($activeAssignments->count() > 0)
+                    @foreach($activeAssignments as $assign)
                         @php
                             $priorityColors = [
                                 'high' => 'border-l-4 border-l-rose-500 border-slate-200',
@@ -396,48 +394,61 @@
                     </div>
                 @endif
             </div>
-        </div>
 
-        <!-- My Certificates -->
-        <div class="glass-card premium-shadow rounded-3xl p-6 space-y-4 animate-fade-in-up" style="animation-delay: 150ms;">
-            <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-                <i class="fa-solid fa-award text-jci-blue"></i> Generated Credentials & PDF Certificates
-            </h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="user-certificates-container">
-                @if($certificates->count() > 0)
-                    @foreach($certificates as $cert)
-                        <div class="p-4 bg-gradient-to-br from-white to-slate-50/50 border border-slate-200/80 rounded-2xl flex flex-col justify-between hover-lift premium-shadow">
-                            <div class="flex items-start gap-2">
-                                <i class="fa-solid fa-medal text-amber-500 text-2xl pt-1 shrink-0"></i>
-                                <div>
-                                    <h5 class="text-xs font-bold text-slate-800 break-words leading-tight">
-                                        {{ $cert->event->title }}
-                                    </h5>
-                                    <p class="text-[9px] text-slate-400 mt-1 uppercase tracking-wider font-semibold">
-                                        ID: {{ substr($cert->certificate_code, 0, 16) }}...
+            @if($completedAssignments->count() > 0)
+                <details class="bg-slate-50/80 border border-slate-200 rounded-2xl p-4">
+                    <summary class="list-none cursor-pointer flex items-center justify-between gap-3">
+                        <span class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-box-archive text-slate-400"></i> Completed Duty Archive
+                        </span>
+                        <span class="text-[10px] font-black text-slate-400 uppercase">{{ $completedAssignments->count() }} Completed</span>
+                    </summary>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @foreach($completedAssignments as $assign)
+                            @php
+                                $certificate = $certificatesByEvent->get($assign->event_id);
+                            @endphp
+                            <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                                <div class="flex justify-between items-start gap-3">
+                                    <div class="min-w-0">
+                                        <h4 class="font-bold text-sm text-slate-800 truncate">{{ $assign->task->title }}</h4>
+                                        <p class="text-[11px] text-slate-400 mt-0.5 truncate">{{ $assign->event->title }}</p>
+                                    </div>
+                                    <span class="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-1 rounded uppercase shrink-0">Completed</span>
+                                </div>
+                                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-slate-500">
+                                    <span class="flex items-center gap-1">
+                                        <i class="fa-solid fa-building-ngo text-slate-400"></i>
+                                        {{ $assign->event->organization->name ?? 'Organization' }}
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i class="fa-solid fa-clock text-slate-400"></i>
+                                        {{ number_format($assign->hours_logged, 2) }} Hours
+                                    </span>
+                                </div>
+                                @if($assign->feedback)
+                                    <p class="mt-3 text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-2">
+                                        Org feedback: {{ $assign->feedback }}
                                     </p>
+                                @endif
+                                <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    @if($certificate)
+                                        <span class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">
+                                            Certificate ID: {{ substr($certificate->certificate_code, 0, 16) }}...
+                                        </span>
+                                        <a href="{{ route('volunteer.certificates.download', $certificate->id) }}" target="_blank"
+                                           class="inline-flex items-center justify-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 text-[10px] font-extrabold px-3 py-1.5 rounded-lg transition">
+                                            <i class="fa-solid fa-file-pdf"></i> View Certificate
+                                        </a>
+                                    @else
+                                        <span class="text-[10px] text-slate-400 italic">Certificate pending issuance.</span>
+                                    @endif
                                 </div>
                             </div>
-                            
-                            <div class="mt-4 pt-3 border-t border-slate-200/60 flex justify-between items-center">
-                                <span class="text-[9px] text-slate-400 font-medium">
-                                    {{ $cert->issued_at->format('M d, Y') }}
-                                </span>
-                                
-                                <a href="{{ route('volunteer.certificates.download', $cert->id) }}" target="_blank"
-                                   class="text-jci-blue hover:underline text-[10px] font-extrabold flex items-center gap-1">
-                                    <i class="fa-solid fa-file-pdf"></i> View Certificate
-                                </a>
-                            </div>
-                        </div>
-                    @endforeach
-                @else
-                    <div class="col-span-full p-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                        <p class="text-xs text-slate-400">Complete tasks to generate verification certificates.</p>
+                        @endforeach
                     </div>
-                @endif
-            </div>
+                </details>
+            @endif
         </div>
     </div>
 

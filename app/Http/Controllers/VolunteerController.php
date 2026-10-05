@@ -25,6 +25,7 @@ class VolunteerController extends Controller
     public function dashboard()
     {
         $volunteer = Auth::user();
+        $volunteer->load('primaryOrganization');
         $mySkills = $volunteer->skills;
 
         // Get all available skills for registration dropdown
@@ -34,13 +35,17 @@ class VolunteerController extends Controller
         // Get volunteer's task assignments (tasks they are assigned to)
         $assignments = Assignment::where('user_id', $volunteer->id)
             ->with(['event.organization', 'task.skills'])
+            ->latest()
             ->get();
+        $activeAssignments = $assignments->whereIn('status', ['approved', 'submitted', 'rejected']);
+        $completedAssignments = $assignments->where('status', 'completed');
 
         // Get issued certificates
         $certificates = Certificate::where('user_id', $volunteer->id)
             ->with('event')
             ->orderBy('issued_at', 'desc')
             ->get();
+        $certificatesByEvent = $certificates->keyBy('event_id');
 
         $assignmentStats = [
             'active' => $assignments->where('status', 'approved')->count(),
@@ -110,7 +115,10 @@ class VolunteerController extends Controller
             'mySkills',
             'availableSkills',
             'assignments',
+            'activeAssignments',
+            'completedAssignments',
             'certificates',
+            'certificatesByEvent',
             'assignmentStats',
             'openTasks',
             'recommendedSkills'
@@ -399,8 +407,10 @@ class VolunteerController extends Controller
                 return [
                     'message' => $item->message,
                     'response' => $item->response,
+                    'admin_reply' => $item->admin_reply,
                     'intent' => $item->intent,
                     'time' => $item->created_at->format('g:i A'),
+                    'admin_time' => $item->admin_replied_at?->format('g:i A'),
                 ];
             });
 

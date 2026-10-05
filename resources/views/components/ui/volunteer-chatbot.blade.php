@@ -139,6 +139,9 @@
                 data.history.forEach(item => {
                     appendUserBubble(item.message, item.time);
                     appendAiBubble(item.response, item.time);
+                    if (item.admin_reply) {
+                        appendAdminBubble(item.admin_reply, item.admin_time || item.time);
+                    }
                 });
                 scrollToChatBottom();
             }
@@ -217,6 +220,23 @@
                 <i class="fa-solid fa-robot"></i>
             </div>
             <div class="bg-slate-100 text-slate-800 p-3 rounded-2xl rounded-tl-xs max-w-[85%] shadow-xs leading-relaxed">
+                ${escapeHtml(text)}
+                <span class="block text-[9px] text-slate-400 mt-1 font-semibold">${time}</span>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function appendAdminBubble(text, time) {
+        const container = document.getElementById('chatbot-messages');
+        const div = document.createElement('div');
+        div.className = 'flex items-start gap-2.5 animate-fade-in-up';
+        div.innerHTML = `
+            <div class="h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-sm">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-100 text-slate-800 p-3 rounded-2xl rounded-tl-xs max-w-[85%] shadow-xs leading-relaxed">
+                <span class="block text-[9px] font-black uppercase text-emerald-700 mb-1">Admin reply</span>
                 ${escapeHtml(text)}
                 <span class="block text-[9px] text-slate-400 mt-1 font-semibold">${time}</span>
             </div>

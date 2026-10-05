@@ -56,6 +56,17 @@ class AdminController extends Controller
             ->latest()
             ->take(30)
             ->get();
+        $systemUsers = User::whereIn('role', ['volunteer', 'organization'])
+            ->with([
+                'skills',
+                'certificates',
+                'primaryOrganization',
+                'assignments.event.organization',
+                'taskApplications.event.organization',
+            ])
+            ->orderBy('role')
+            ->orderBy('name')
+            ->get();
 
         // Get active tab from session or request (default to dashboard)
         $activeTab = $request->query('tab', 'dashboard');
@@ -72,6 +83,7 @@ class AdminController extends Controller
             'broadcastLogCount',
             'chatbotRules',
             'chatbotLogs',
+            'systemUsers',
             'activeTab'
         ));
     }
@@ -162,25 +174,73 @@ class AdminController extends Controller
             ->with('success', 'Intent rule deleted successfully.');
     }
 
+    public function replyToChatbotConversation(Request $request, ChatbotResponse $chatbotResponse)
+    {
+        $data = $request->validate([
+            'admin_reply' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $chatbotResponse->update([
+            'admin_reply' => $data['admin_reply'],
+            'admin_replied_by' => Auth::id(),
+            'admin_replied_at' => Carbon::now(),
+        ]);
+
+        if ($chatbotResponse->user_id) {
+            DB::table('notifications')->insert([
+                'id' => Str::uuid(),
+                'type' => 'App\\Notifications\\GenericNotification',
+                'notifiable_type' => 'App\\Models\\User',
+                'notifiable_id' => $chatbotResponse->user_id,
+                'data' => json_encode([
+                    'title' => 'Admin replied to your assistant question',
+                    'message' => 'Open the AI Assistant to view the admin response to your recent question.',
+                    'icon' => 'fa-comments',
+                ]),
+                'read_at' => null,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+        }
+
+        return redirect()->route('admin.dashboard', ['tab' => 'chatbot'])
+            ->with('success', 'Admin reply sent to the volunteer conversation.');
+    }
+
     /**
-     * Handle Global Broadcast form submission.
+     * Handle system notice form submission.
      */
     public function broadcast(Request $request)
     {
         $request->validate([
+            'notice_type' => ['required', 'string', 'in:technical_issue,maintenance,service_update,general_advisory'],
+            'impact_level' => ['required', 'string', 'in:info,minor,major,critical'],
             'title' => ['required', 'string'],
             'body' => ['required', 'string'],
         ]);
 
-        $mediums = [];
-        if ($request->has('broadcast_web'))
-            $mediums[] = 'Web Portal';
-        if ($request->has('broadcast_email'))
-            $mediums[] = 'Email Record';
-        if ($request->has('broadcast_sms'))
-            $mediums[] = 'SMS Record';
+        $noticeTypes = [
+            'technical_issue' => 'Technical Issue',
+            'maintenance' => 'Scheduled Maintenance',
+            'service_update' => 'Service Update',
+            'general_advisory' => 'General Advisory',
+        ];
 
-        $mediumsStr = count($mediums) > 0 ? implode(', ', $mediums) : 'No channels selected';
+        $impactLevels = [
+            'info' => 'Informational',
+            'minor' => 'Minor Impact',
+            'major' => 'Major Impact',
+            'critical' => 'Critical',
+        ];
+
+        $mediums = ['Web Portal'];
+        $mediumsStr = implode(', ', $mediums);
+        $noticeType = $noticeTypes[$request->notice_type];
+        $impactLevel = $impactLevels[$request->impact_level];
+        $recipients = User::whereIn('role', ['organization', 'volunteer'])
+            ->where('status', 'approved')
+            ->get(['id']);
+        $now = Carbon::now();
 
         RecordArchive::create([
             'table_name' => 'broadcasts',
@@ -188,13 +248,37 @@ class AdminController extends Controller
             'original_data' => [
                 'title' => $request->title,
                 'body' => $request->body,
-                'mediums' => $mediums
+                'notice_type' => $noticeType,
+                'impact_level' => $impactLevel,
+                'mediums' => $mediums,
+                'recipient_count' => $recipients->count()
             ],
             'archived_by' => Auth::id(),
-            'reason' => "Broadcast notice recorded for: {$mediumsStr}"
+            'reason' => "{$noticeType} system notice recorded for {$mediumsStr} with {$impactLevel} impact."
         ]);
 
+        if ($recipients->isNotEmpty()) {
+            DB::table('notifications')->insert(
+                $recipients->map(function ($recipient) use ($request, $noticeType, $impactLevel, $now) {
+                    return [
+                        'id' => Str::uuid(),
+                        'type' => 'App\\Notifications\\GenericNotification',
+                        'notifiable_type' => 'App\\Models\\User',
+                        'notifiable_id' => $recipient->id,
+                        'data' => json_encode([
+                            'title' => $request->title,
+                            'message' => "{$noticeType} ({$impactLevel}): {$request->body}",
+                            'icon' => 'fa-tower-broadcast',
+                        ]),
+                        'read_at' => null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                })->toArray()
+            );
+        }
+
         return redirect()->route('admin.dashboard', ['tab' => 'broadcast'])
-            ->with('success', "Broadcast notice recorded successfully for {$mediumsStr}.");
+            ->with('success', "{$noticeType} notice posted to {$recipients->count()} approved portal user(s).");
     }
 }

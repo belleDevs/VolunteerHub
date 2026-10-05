@@ -23,11 +23,6 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-4 shrink-0">
-                    <a href="{{ route('profile.show') }}" class="text-slate-600 hover:text-jci-blue text-xs font-bold flex items-center gap-1.5 transition px-2 py-1 rounded-lg hover:bg-slate-50">
-                        <i class="fa-solid fa-user-pen text-slate-400 text-xs"></i>
-                        <span class="hidden sm:inline">Profile</span>
-                    </a>
-                    <div class="h-5 w-px bg-slate-200"></div>
                     <x-ui.notifications-bell />
                     <div class="h-5 w-px bg-slate-200"></div>
                     <form action="{{ route('logout') }}" method="POST">

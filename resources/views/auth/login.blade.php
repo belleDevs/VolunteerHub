@@ -8,28 +8,28 @@
                 <div class="absolute -bottom-20 -right-20 w-72 h-72 bg-jci-accent/10 rounded-full blur-3xl"></div>
                 
                 <div class="relative z-10">
-                    <span class="bg-jci-accent text-jci-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">Surigao City, Caraga</span>
-                    <h2 class="text-2xl sm:text-3xl font-extrabold mt-3 sm:mt-4 tracking-tight leading-tight">Empowering leaders, impacting lives.</h2>
-                    <p class="text-xs sm:text-sm text-slate-300 mt-2 sm:mt-3 leading-relaxed">Join the JCI Surigao Wensies digital volunteer platform to plan events, track certifications, and connect with local communities.</p>
+                    <span class="bg-jci-accent text-jci-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">VolunteerHub Portal</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mt-3 sm:mt-4 tracking-tight leading-tight">Coordinate service, track impact.</h2>
+                    <p class="text-xs sm:text-sm text-slate-300 mt-2 sm:mt-3 leading-relaxed">A shared volunteer management platform for organizations, volunteers, and administrators to plan events, manage duties, and verify community work.</p>
                 </div>
 
                 <div class="mt-6 sm:mt-8 relative z-10 border-t border-white/10 pt-4 sm:pt-6">
-                    <p class="text-[11px] sm:text-xs text-slate-400 italic">"Socio-civic leadership starts with simple actions. Coordinate, volunteer, and make a persistent difference."</p>
+                    <p class="text-[11px] sm:text-xs text-slate-400 italic">"Community impact grows when people, tasks, and records stay connected."</p>
                     <div class="flex items-center gap-3 mt-3 sm:mt-4">
                         <i class="fa-solid fa-hands-holding-child text-jci-accent text-lg sm:text-xl"></i>
                         <div>
-                            <h5 class="text-xs font-bold text-white">JCI Surigao Wensies Chapter</h5>
-                            <p class="text-[10px] text-slate-400">Official VolunteerHub Portal</p>
+                            <h5 class="text-xs font-bold text-white">VolunteerHub</h5>
+                            <p class="text-[10px] text-slate-400">Unified access for approved platform users</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Form: Actual Role Selection & Access Credentials -->
+            <!-- Right Form: Unified Access Credentials -->
             <div class="md:col-span-7 p-6 sm:p-8 md:p-12 flex flex-col justify-center">
                 <div class="mb-6">
                     <h3 class="text-2xl font-black text-slate-900">Welcome to VolunteerHub</h3>
-                    <p class="text-sm text-slate-500 mt-1">Please select your account type and enter credentials to continue.</p>
+                    <p class="text-sm text-slate-500 mt-1">Sign in once. VolunteerHub will open the correct dashboard for your account role.</p>
                 </div>
 
                 @if (session('status'))
@@ -44,22 +44,6 @@
                         <span>{{ session('success') }}</span>
                     </div>
                 @endif
-
-                <!-- Role Selector -->
-                <div class="grid grid-cols-3 gap-2 mb-6">
-                    <button type="button" onclick="selectAuthRole('admin')" id="authRole-admin" class="auth-role-btn border-2 border-jci-blue bg-blue-50/50 text-jci-blue rounded-xl p-3 flex flex-col items-center justify-center text-center transition duration-200 hover:bg-blue-50">
-                        <i class="fa-solid fa-user-shield text-lg mb-1"></i>
-                        <span class="text-[11px] font-bold">Admin</span>
-                    </button>
-                    <button type="button" onclick="selectAuthRole('org')" id="authRole-org" class="auth-role-btn border border-slate-200 text-slate-600 rounded-xl p-3 flex flex-col items-center justify-center text-center transition duration-200 hover:border-jci-blue hover:text-jci-blue hover:bg-blue-50/20">
-                        <i class="fa-solid fa-building-ngo text-lg mb-1"></i>
-                        <span class="text-[11px] font-bold">Organization</span>
-                    </button>
-                    <button type="button" onclick="selectAuthRole('volunteer')" id="authRole-volunteer" class="auth-role-btn border border-slate-200 text-slate-600 rounded-xl p-3 flex flex-col items-center justify-center text-center transition duration-200 hover:border-jci-blue hover:text-jci-blue hover:bg-blue-50/20">
-                        <i class="fa-solid fa-handshake-angle text-lg mb-1"></i>
-                        <span class="text-[11px] font-bold">Volunteer</span>
-                    </button>
-                </div>
 
                 <!-- Laravel Authentication Form -->
                 <form action="{{ route('login') }}" method="POST" class="space-y-4">
@@ -98,7 +82,7 @@
                                 <a href="{{ route('register.volunteer') }}" class="text-jci-blue hover:underline font-bold flex items-center gap-1">
                                     <i class="fa-solid fa-user-plus text-[10px]"></i> Volunteer
                                 </a>
-                                <span class="text-slate-300">•</span>
+                                <span class="text-slate-300">/</span>
                                 <a href="{{ route('register.org') }}" class="text-jci-blue hover:underline font-bold flex items-center gap-1">
                                     <i class="fa-solid fa-building-ngo text-[10px]"></i> Organization
                                 </a>
@@ -110,22 +94,4 @@
             </div>
         </div>
     </div>
-
-    <!-- Auth JS to handle UI interaction -->
-    <script>
-        function selectAuthRole(role) {
-            // Remove active classes from all buttons
-            document.querySelectorAll('.auth-role-btn').forEach(btn => {
-                btn.classList.remove('border-2', 'border-jci-blue', 'bg-blue-50/50', 'text-jci-blue');
-                btn.classList.add('border-slate-200', 'text-slate-600');
-            });
-            
-            // Add active classes to selected button
-            const activeBtn = document.getElementById('authRole-' + role);
-            if (activeBtn) {
-                activeBtn.classList.remove('border-slate-200', 'text-slate-600');
-                activeBtn.classList.add('border-2', 'border-jci-blue', 'bg-blue-50/50', 'text-jci-blue');
-            }
-        }
-    </script>
 </x-layout.app>

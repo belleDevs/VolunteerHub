@@ -65,10 +65,21 @@ class OrgController extends Controller
             ->distinct('user_id')
             ->count('user_id');
 
+        $organizationVolunteers = User::where('role', 'volunteer')
+            ->where('organization_id', $orgId)
+            ->with(['skills', 'assignments' => function ($query) use ($eventIds) {
+                $query->whereIn('event_id', $eventIds);
+            }, 'certificates'])
+            ->orderBy('name')
+            ->get();
+
         $events = Event::where('organization_id', $orgId)
             ->with(['tasks.skills', 'assignments.user'])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('start_time', 'asc')
             ->get();
+        $activeEvents = $events->filter(fn($event) => !in_array($event->status, ['completed', 'cancelled']) && $event->end_time->gte($now));
+        $archivedEvents = $events->filter(fn($event) => in_array($event->status, ['completed', 'cancelled']) || $event->end_time->lt($now))
+            ->sortByDesc('end_time');
 
         $complianceDocuments = RecordArchive::where('table_name', 'compliance_documents')
             ->where('archived_by', $orgId)
@@ -156,7 +167,10 @@ class OrgController extends Controller
             'organization',
             'myEventsCount',
             'assignedVolunteersCount',
+            'organizationVolunteers',
             'events',
+            'activeEvents',
+            'archivedEvents',
             'complianceDocuments',
             'completionReviews',
             'taskApplications',
@@ -234,6 +248,84 @@ class OrgController extends Controller
 
         return redirect()->route('org.dashboard')
             ->with('success', "Event '{$event->title}' has been successfully launched.");
+    }
+
+    public function updateEvent(Request $request, Event $event)
+    {
+        abort_unless((int) $event->organization_id === Auth::id(), 403);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'location' => ['required', 'string'],
+            'start_time' => ['required', 'date'],
+            'end_time' => ['required', 'date', 'after:start_time'],
+            'capacity' => ['nullable', 'integer', 'min:1'],
+            'status' => ['required', 'in:draft,published,completed,cancelled'],
+        ]);
+
+        $event->update([
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'location' => $data['location'],
+            'start_time' => Carbon::parse($data['start_time']),
+            'end_time' => Carbon::parse($data['end_time']),
+            'capacity' => $data['capacity'] ?? null,
+            'status' => $data['status'],
+        ]);
+
+        return redirect()->route('org.dashboard')
+            ->with('success', "Event '{$event->title}' has been updated.");
+    }
+
+    public function destroyEvent(Event $event)
+    {
+        abort_unless((int) $event->organization_id === Auth::id(), 403);
+
+        $title = $event->title;
+        $event->tasks()->delete();
+        $event->delete();
+
+        return redirect()->route('org.dashboard')
+            ->with('success', "Event '{$title}' has been removed from the planner.");
+    }
+
+    public function updateTask(Request $request, Task $task)
+    {
+        abort_unless($task->event && (int) $task->event->organization_id === Auth::id(), 403);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'priority' => ['required', 'in:low,medium,high'],
+            'status' => ['required', 'in:pending,in_progress,completed,cancelled'],
+            'due_date' => ['nullable', 'date'],
+            'skill_ids' => ['nullable', 'array'],
+            'skill_ids.*' => ['integer', 'exists:skills,id'],
+        ]);
+
+        $task->update([
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'priority' => $data['priority'],
+            'status' => $data['status'],
+            'due_date' => isset($data['due_date']) ? Carbon::parse($data['due_date']) : null,
+        ]);
+        $task->skills()->sync($data['skill_ids'] ?? []);
+
+        return redirect()->route('org.dashboard', ['task_id' => $task->id])
+            ->with('success', "Task '{$task->title}' has been updated.");
+    }
+
+    public function destroyTask(Task $task)
+    {
+        abort_unless($task->event && (int) $task->event->organization_id === Auth::id(), 403);
+
+        $title = $task->title;
+        $task->delete();
+
+        return redirect()->route('org.dashboard')
+            ->with('success', "Task '{$title}' has been removed.");
     }
 
     /**

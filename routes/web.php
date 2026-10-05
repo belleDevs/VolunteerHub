@@ -34,6 +34,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/orgs/{id}/reject', [AdminController::class, 'rejectOrg'])->name('admin.orgs.reject');
         Route::post('/chatbot/rules', [AdminController::class, 'storeChatbotRule'])->name('admin.chatbot.rules.store');
         Route::delete('/chatbot/rules/{id}', [AdminController::class, 'deleteChatbotRule'])->name('admin.chatbot.rules.destroy');
+        Route::post('/chatbot/conversations/{chatbotResponse}/reply', [AdminController::class, 'replyToChatbotConversation'])->name('admin.chatbot.conversations.reply');
         Route::post('/broadcast', [AdminController::class, 'broadcast'])->name('admin.broadcast');
     });
 
@@ -41,6 +42,10 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('org')->middleware('role:organization')->group(function () {
         Route::get('/dashboard', [OrgController::class, 'dashboard'])->name('org.dashboard');
         Route::post('/events', [OrgController::class, 'storeEvent'])->name('org.events.store');
+        Route::patch('/events/{event}', [OrgController::class, 'updateEvent'])->name('org.events.update');
+        Route::delete('/events/{event}', [OrgController::class, 'destroyEvent'])->name('org.events.destroy');
+        Route::patch('/tasks/{task}', [OrgController::class, 'updateTask'])->name('org.tasks.update');
+        Route::delete('/tasks/{task}', [OrgController::class, 'destroyTask'])->name('org.tasks.destroy');
         Route::post('/assignments', [OrgController::class, 'assignVolunteer'])->name('org.assignments.store');
         Route::post('/tasks/{task}/outreach', [OrgController::class, 'sendTaskOutreach'])->name('org.tasks.outreach');
         Route::post('/applications/{application}/approve', [OrgController::class, 'approveApplication'])->name('org.applications.approve');

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -77,8 +79,13 @@ class AuthController extends Controller
         }
 
         $skills = \App\Models\Skill::all();
+        $organizations = \App\Models\User::where('role', 'organization')
+            ->where('status', 'approved')
+            ->orderBy('name')
+            ->get();
+        session(['registration_started_at.volunteer' => now()->timestamp]);
 
-        return view('auth.register-volunteer', compact('skills'));
+        return view('auth.register-volunteer', compact('skills', 'organizations'));
     }
 
     /**
@@ -86,14 +93,23 @@ class AuthController extends Controller
      */
     public function registerVolunteer(Request $request)
     {
+        $this->guardRegistrationSpam($request, 'volunteer');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'organization_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('users', 'id')->where(function ($query) {
+                    $query->where('role', 'organization')->where('status', 'approved');
+                }),
+            ],
             'phone' => ['nullable', 'string', 'max:20'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'skills' => ['nullable', 'array'],
             'skills.*' => ['exists:skills,id'],
+            'website' => ['nullable', 'prohibited'],
         ]);
 
         $user = \App\Models\User::create([
@@ -101,6 +117,7 @@ class AuthController extends Controller
             'email' => $data['email'],
             'password' => \Illuminate\Support\Facades\Hash::make($data['password']),
             'role' => 'volunteer',
+            'organization_id' => $data['organization_id'],
             'status' => 'approved',
             'phone' => $data['phone'] ?? null,
             'bio' => $data['bio'] ?? null,
@@ -126,6 +143,8 @@ class AuthController extends Controller
             return $this->redirectBasedOnRole(Auth::user());
         }
 
+        session(['registration_started_at.organization' => now()->timestamp]);
+
         return view('auth.register-org');
     }
 
@@ -134,12 +153,15 @@ class AuthController extends Controller
      */
     public function registerOrg(Request $request)
     {
+        $this->guardRegistrationSpam($request, 'organization');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['required', 'string', 'max:20'],
             'bio' => ['required', 'string', 'max:1000'],
+            'website' => ['nullable', 'prohibited'],
         ]);
 
         $user = \App\Models\User::create([
@@ -173,6 +195,38 @@ class AuthController extends Controller
 
         return redirect()->route('login')
             ->with('status', "Application submitted for '{$user->name}'! Your organization account is undergoing compliance review by the Admin.");
+    }
+
+    /**
+     * Stop common registration spam without adding friction for real users.
+     */
+    private function guardRegistrationSpam(Request $request, string $type): void
+    {
+        if ($request->filled('website')) {
+            throw ValidationException::withMessages([
+                'email' => 'We could not process this registration. Please try again.',
+            ]);
+        }
+
+        $startedAt = (int) session("registration_started_at.{$type}", 0);
+        if ($startedAt === 0 || now()->timestamp - $startedAt < 3) {
+            throw ValidationException::withMessages([
+                'email' => 'Please review the form and submit again.',
+            ]);
+        }
+
+        $email = strtolower((string) $request->input('email', 'unknown'));
+        $key = "registration:{$type}:" . $request->ip() . ':' . $email;
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+
+            throw ValidationException::withMessages([
+                'email' => "Too many registration attempts. Please try again in {$seconds} seconds.",
+            ]);
+        }
+
+        RateLimiter::hit($key, 600);
     }
 
     /**

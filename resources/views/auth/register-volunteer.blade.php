@@ -54,6 +54,10 @@
 
                 <form action="{{ route('register.volunteer') }}" method="POST" class="space-y-4">
                     @csrf
+                    <div class="hidden" aria-hidden="true">
+                        <label for="volunteer-website">Website</label>
+                        <input id="volunteer-website" type="text" name="website" value="" tabindex="-1" autocomplete="off">
+                    </div>
 
                     <!-- Full Name -->
                     <div>
@@ -104,6 +108,31 @@
                         </div>
                     </div>
 
+                    <!-- Organization Affiliation -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Preferred Organization <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                <i class="fa-solid fa-building-ngo text-xs"></i>
+                            </span>
+                            <select name="organization_id" required
+                                    class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none bg-white @error('organization_id') border-rose-500 @enderror">
+                                <option value="" disabled {{ old('organization_id') ? '' : 'selected' }}>Choose an approved organization</option>
+                                @forelse($organizations as $organization)
+                                    <option value="{{ $organization->id }}" {{ (string) old('organization_id') === (string) $organization->id ? 'selected' : '' }}>
+                                        {{ $organization->name }}
+                                    </option>
+                                @empty
+                                    <option value="" disabled>No approved organizations available</option>
+                                @endforelse
+                            </select>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Choose the organization you want to volunteer with.</p>
+                        @error('organization_id')
+                            <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Password & Password Confirmation -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
@@ -142,20 +171,28 @@
                                   placeholder="Tell organizations about your interest in civic activities...">{{ old('bio') }}</textarea>
                     </div>
 
-                    <!-- Skills Checkboxes -->
+                    <!-- Skills Dropdown -->
                     @if(isset($skills) && $skills->count() > 0)
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Select Initial Skills</label>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 max-h-36 overflow-y-auto custom-scrollbar">
-                            @foreach($skills as $skill)
-                                <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 text-xs hover:border-jci-blue transition">
-                                    <input type="checkbox" name="skills[]" value="{{ $skill->id }}" 
-                                           class="rounded text-jci-blue focus:ring-jci-blue"
-                                           {{ is_array(old('skills')) && in_array($skill->id, old('skills')) ? 'checked' : '' }}>
-                                    <span class="font-medium text-slate-700 truncate text-[11px]">{{ $skill->name }}</span>
-                                </label>
-                            @endforeach
-                        </div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Initial Skills</label>
+                        <details class="relative">
+                            <summary class="list-none cursor-pointer w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-600 bg-white flex items-center justify-between gap-2 hover:border-jci-blue transition">
+                                <span class="font-semibold">
+                                    {{ is_array(old('skills')) && count(old('skills')) > 0 ? count(old('skills')) . ' skill(s) selected' : 'Choose skills' }}
+                                </span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                            </summary>
+                            <div class="mt-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 max-h-44 overflow-y-auto custom-scrollbar grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                @foreach($skills as $skill)
+                                    <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 text-xs hover:border-jci-blue transition">
+                                        <input type="checkbox" name="skills[]" value="{{ $skill->id }}"
+                                               class="rounded text-jci-blue focus:ring-jci-blue"
+                                               {{ is_array(old('skills')) && in_array($skill->id, old('skills')) ? 'checked' : '' }}>
+                                        <span class="font-medium text-slate-700 truncate text-[11px]">{{ $skill->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </details>
                     </div>
                     @endif
 

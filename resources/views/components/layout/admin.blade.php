@@ -43,7 +43,12 @@
                             <span class="ml-auto bg-amber-500 text-jci-dark text-[9px] px-2 py-0.5 rounded-full font-black animate-pulse">{{ $pendingCount }}</span>
                         @endif
                     </a>
-                    
+
+                    <a href="{{ route('admin.dashboard', ['tab' => 'users']) }}"
+                       class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all {{ $activeTab === 'users' ? 'text-white bg-jci-blue shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
+                        <i class="fa-solid fa-users-gear text-sm w-4"></i> User Lists
+                    </a>
+                     
                     <a href="{{ route('admin.dashboard', ['tab' => 'chatbot']) }}" 
                        class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all {{ $activeTab === 'chatbot' ? 'text-white bg-jci-blue shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
                         <i class="fa-solid fa-robot text-sm w-4"></i> Chatbot Setup
@@ -51,7 +56,7 @@
                     
                     <a href="{{ route('admin.dashboard', ['tab' => 'broadcast']) }}" 
                        class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all {{ $activeTab === 'broadcast' ? 'text-white bg-jci-blue shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
-                        <i class="fa-solid fa-tower-broadcast text-sm w-4"></i> Broadcaster
+                        <i class="fa-solid fa-tower-broadcast text-sm w-4"></i> System Notices
                     </a>
                 </nav>
             </div>

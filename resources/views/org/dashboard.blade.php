@@ -21,7 +21,84 @@
                     </div>
                     <div class="text-[10px] uppercase text-slate-300">Assigned Volunteers</div>
                 </div>
+                <div class="text-center bg-white/10 p-3 rounded-xl border border-white/10">
+                    <div class="text-xl font-extrabold text-jci-accent">
+                        {{ $organizationVolunteers->count() }}
+                    </div>
+                    <div class="text-[10px] uppercase text-slate-300">Org Members</div>
+                </div>
             </div>
+        </div>
+
+        <!-- Organization Volunteer Members -->
+        <div class="glass-card premium-shadow rounded-3xl p-6 space-y-4 animate-fade-in-up">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-3 border-b border-slate-100">
+                <div>
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm md:text-base">
+                        <i class="fa-solid fa-users text-jci-blue"></i> Organization Volunteers
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Volunteers who selected your organization during registration.</p>
+                </div>
+                <span class="bg-blue-50 text-jci-blue text-xs px-2.5 py-1 rounded-full font-black">
+                    {{ $organizationVolunteers->count() }} Member(s)
+                </span>
+            </div>
+
+            @if($organizationVolunteers->count() > 0)
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    @foreach($organizationVolunteers as $member)
+                        <div class="bg-white border border-slate-200/80 rounded-2xl p-4 flex flex-col gap-3 hover-lift">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h4 class="text-sm font-black text-slate-800 truncate">{{ $member->name }}</h4>
+                                    <p class="text-[10px] text-slate-400 truncate">{{ $member->email }}</p>
+                                    @if($member->phone)
+                                        <p class="text-[10px] text-slate-400">{{ $member->phone }}</p>
+                                    @endif
+                                </div>
+                                <span class="text-[9px] font-black px-2 py-1 rounded uppercase {{ $member->availability === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500' }}">
+                                    {{ $member->availability === 'active' ? 'Available' : 'On Hold' }}
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="bg-slate-50 border border-slate-100 rounded-xl p-2">
+                                    <span class="block text-[8px] text-slate-400 font-black uppercase">Org Tasks</span>
+                                    <span class="text-sm font-black text-slate-800">{{ $member->assignments->count() }}</span>
+                                </div>
+                                <div class="bg-slate-50 border border-slate-100 rounded-xl p-2">
+                                    <span class="block text-[8px] text-slate-400 font-black uppercase">Done</span>
+                                    <span class="text-sm font-black text-emerald-600">{{ $member->assignments->where('status', 'completed')->count() }}</span>
+                                </div>
+                                <div class="bg-slate-50 border border-slate-100 rounded-xl p-2">
+                                    <span class="block text-[8px] text-slate-400 font-black uppercase">Certs</span>
+                                    <span class="text-sm font-black text-jci-blue">{{ $member->certificates->count() }}</span>
+                                </div>
+                            </div>
+
+                            @if($member->skills->count() > 0)
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($member->skills->take(6) as $skill)
+                                        <span class="bg-blue-50 text-jci-blue border border-blue-100 text-[8px] font-bold px-1.5 py-0.5 rounded">
+                                            {{ $skill->name }}
+                                        </span>
+                                    @endforeach
+                                    @if($member->skills->count() > 6)
+                                        <span class="text-[9px] text-slate-400 font-bold">+{{ $member->skills->count() - 6 }} more</span>
+                                    @endif
+                                </div>
+                            @else
+                                <p class="text-[10px] text-slate-400 italic">No skills listed yet.</p>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <i class="fa-solid fa-user-plus text-slate-300 text-3xl mb-2"></i>
+                    <p class="text-xs text-slate-400 font-medium">No volunteers have selected your organization yet.</p>
+                </div>
+            @endif
         </div>
 
         <!-- Dynamic Planner Widget -->
@@ -35,9 +112,24 @@
                 </button>
             </div>
             
-            <div class="space-y-6" id="org-events-container">
-                @if($events->count() > 0)
-                    @foreach($events as $event)
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-slate-50/80 border border-slate-200 rounded-2xl p-3">
+                    <span class="text-[9px] font-black uppercase text-slate-400">Active Events</span>
+                    <p class="text-xl font-black text-slate-800">{{ $activeEvents->count() }}</p>
+                </div>
+                <div class="bg-slate-50/80 border border-slate-200 rounded-2xl p-3">
+                    <span class="text-[9px] font-black uppercase text-slate-400">Archived</span>
+                    <p class="text-xl font-black text-slate-800">{{ $archivedEvents->count() }}</p>
+                </div>
+                <div class="bg-slate-50/80 border border-slate-200 rounded-2xl p-3">
+                    <span class="text-[9px] font-black uppercase text-slate-400">Open Tasks</span>
+                    <p class="text-xl font-black text-slate-800">{{ $allOrgTasks->count() }}</p>
+                </div>
+            </div>
+
+            <div class="space-y-4" id="org-events-container">
+                @if($activeEvents->count() > 0)
+                    @foreach($activeEvents as $event)
                         @php
                             $eventHasEnded = $event->end_time->isPast();
                             $eventIsOngoing = !$eventHasEnded && $event->start_time->isPast();
@@ -52,9 +144,9 @@
                                 default => 'bg-emerald-500 text-white',
                             };
                         @endphp
-                        <div class="p-6 bg-slate-50/20 rounded-2xl border border-slate-200/80 space-y-4 hover:border-slate-300 transition-all duration-200">
-                            <div class="flex justify-between items-start">
-                                <div>
+                        <div class="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-4 hover:border-slate-300 transition-all duration-200">
+                            <div class="flex flex-col xl:flex-row xl:justify-between xl:items-start gap-4">
+                                <div class="min-w-0">
                                     <div class="flex items-center gap-2">
                                         <span class="bg-blue-100 text-jci-blue text-[9px] font-black uppercase px-2 py-0.5 rounded">
                                             {{ $event->location }}
@@ -63,12 +155,47 @@
                                             {{ $event->start_time->format('M d, Y h:i A') }} - {{ $event->end_time->format('M d, Y h:i A') }}
                                         </span>
                                     </div>
-                                    <h4 class="font-bold text-base text-slate-900 mt-1">{{ $event->title }}</h4>
-                                    <p class="text-xs text-slate-500 mt-1">{{ $event->description }}</p>
+                                    <h4 class="font-bold text-base text-slate-900 mt-1 truncate">{{ $event->title }}</h4>
+                                    <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ $event->description }}</p>
                                 </div>
-                                <span class="{{ $eventStatusClass }} text-[9px] font-black uppercase px-2 py-0.5 rounded">
-                                    {{ $eventStatusLabel }}
-                                </span>
+                                <div class="flex flex-wrap xl:justify-end gap-2 xl:shrink-0">
+                                    <span class="{{ $eventStatusClass }} text-[9px] font-black uppercase px-2 py-1 rounded h-fit">
+                                        {{ $eventStatusLabel }}
+                                    </span>
+                                    <details class="relative">
+                                        <summary class="list-none cursor-pointer border border-slate-200 bg-white text-slate-600 hover:text-jci-blue hover:border-jci-blue text-[10px] font-black px-2.5 py-1 rounded-lg">
+                                            Manage
+                                        </summary>
+                                        <div class="mt-2 xl:absolute xl:right-0 xl:top-full xl:w-80 bg-white border border-slate-200 rounded-2xl p-3 shadow-xl z-20 space-y-3">
+                                            <form action="{{ route('org.events.update', $event->id) }}" method="POST" class="space-y-2">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input name="title" value="{{ $event->title }}" required class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                                <input name="location" value="{{ $event->location }}" required class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                                <div class="grid grid-cols-2 gap-2">
+                                                    <input name="start_time" type="datetime-local" value="{{ $event->start_time->format('Y-m-d\TH:i') }}" required class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                                    <input name="end_time" type="datetime-local" value="{{ $event->end_time->format('Y-m-d\TH:i') }}" required class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                                </div>
+                                                <div class="grid grid-cols-2 gap-2">
+                                                    <input name="capacity" type="number" min="1" value="{{ $event->capacity }}" placeholder="Capacity" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                                    <select name="status" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none bg-white">
+                                                        <option value="draft" {{ $event->status === 'draft' ? 'selected' : '' }}>Draft</option>
+                                                        <option value="published" {{ $event->status === 'published' ? 'selected' : '' }}>Published</option>
+                                                        <option value="completed" {{ $event->status === 'completed' ? 'selected' : '' }}>Completed</option>
+                                                        <option value="cancelled" {{ $event->status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                                    </select>
+                                                </div>
+                                                <textarea name="description" required rows="3" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none resize-none">{{ $event->description }}</textarea>
+                                                <button type="submit" class="w-full bg-jci-blue hover:bg-jci-dark text-white text-xs font-black py-2 rounded-lg transition">Save Event</button>
+                                            </form>
+                                            <form action="{{ route('org.events.destroy', $event->id) }}" method="POST" onsubmit="return confirm('Remove this event and its tasks from the planner?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="w-full border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-black py-2 rounded-lg transition">Delete Event</button>
+                                            </form>
+                                        </div>
+                                    </details>
+                                </div>
                             </div>
 
                             <!-- Tasks Grid -->
@@ -76,8 +203,8 @@
                                 <h5 class="text-xs font-bold text-slate-700">Checklist & Action items</h5>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     @forelse($event->tasks as $task)
-                                        <div class="p-3 bg-white border border-slate-200/60 rounded-2xl shadow-sm flex justify-between items-center hover-lift">
-                                            <div>
+                                        <div class="p-3 bg-slate-50/70 border border-slate-200/60 rounded-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 hover-lift">
+                                            <div class="min-w-0">
                                                 <h6 class="text-xs font-bold text-slate-800">{{ $task->title }}</h6>
                                                 <div class="flex flex-wrap items-center gap-2 mt-1">
                                                     @if($task->priority === 'high')
@@ -99,7 +226,7 @@
                                             </div>
                                             
                                             <!-- List assignments -->
-                                            <div class="text-right">
+                                            <div class="text-left sm:text-right sm:shrink-0">
                                                 @php
                                                     $assignment = $event->assignments->where('task_id', $task->id)->first();
                                                 @endphp
@@ -121,6 +248,40 @@
                                                         </form>
                                                     @endif
                                                 @endif
+                                                <details class="mt-2 relative">
+                                                    <summary class="list-none cursor-pointer text-[9px] font-black text-slate-500 hover:text-jci-blue uppercase">Edit Task</summary>
+                                                    <form action="{{ route('org.tasks.update', $task->id) }}" method="POST" class="mt-2 sm:absolute sm:right-0 sm:top-full sm:w-72 bg-white border border-slate-200 rounded-xl p-3 shadow-xl z-20 space-y-2 text-left">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <input name="title" value="{{ $task->title }}" required class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                                        <textarea name="description" rows="2" placeholder="Task description" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none resize-none">{{ $task->description }}</textarea>
+                                                        <div class="grid grid-cols-2 gap-2">
+                                                            <select name="priority" class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-white">
+                                                                <option value="low" {{ $task->priority === 'low' ? 'selected' : '' }}>Low</option>
+                                                                <option value="medium" {{ $task->priority === 'medium' ? 'selected' : '' }}>Medium</option>
+                                                                <option value="high" {{ $task->priority === 'high' ? 'selected' : '' }}>High</option>
+                                                            </select>
+                                                            <select name="status" class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-white">
+                                                                <option value="pending" {{ $task->status === 'pending' ? 'selected' : '' }}>Pending</option>
+                                                                <option value="in_progress" {{ $task->status === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                                                                <option value="completed" {{ $task->status === 'completed' ? 'selected' : '' }}>Completed</option>
+                                                                <option value="cancelled" {{ $task->status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                                            </select>
+                                                        </div>
+                                                        <input name="due_date" type="datetime-local" value="{{ $task->due_date ? $task->due_date->format('Y-m-d\TH:i') : '' }}" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                                        <select name="skill_ids[]" multiple class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-white">
+                                                            @foreach($skills as $skill)
+                                                                <option value="{{ $skill->id }}" {{ $task->skills->contains('id', $skill->id) ? 'selected' : '' }}>{{ $skill->name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        <button type="submit" class="w-full bg-jci-blue hover:bg-jci-dark text-white text-xs font-black py-2 rounded-lg transition">Save Task</button>
+                                                    </form>
+                                                </details>
+                                                <form action="{{ route('org.tasks.destroy', $task->id) }}" method="POST" class="mt-1" onsubmit="return confirm('Delete this task?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-[9px] font-black text-rose-500 hover:text-rose-700 uppercase">Delete</button>
+                                                </form>
                                             </div>
                                         </div>
                                     @empty
@@ -137,8 +298,37 @@
                 @else
                     <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                         <i class="fa-solid fa-calendar-xmark text-slate-300 text-4xl mb-2"></i>
-                        <p class="text-xs text-slate-400 font-medium">No community events launched yet. Click Launch New Event to start.</p>
+                        <p class="text-xs text-slate-400 font-medium">No active events right now. Launch a new event or review completed work in the archive below.</p>
                     </div>
+                @endif
+
+                @if($archivedEvents->count() > 0)
+                    <details class="bg-slate-50/80 border border-slate-200 rounded-2xl p-4">
+                        <summary class="list-none cursor-pointer flex items-center justify-between gap-3">
+                            <span class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-box-archive text-slate-400"></i> Completed & Cancelled Events
+                            </span>
+                            <span class="text-[10px] font-black text-slate-400 uppercase">{{ $archivedEvents->count() }} Archived</span>
+                        </summary>
+                        <div class="mt-4 space-y-2">
+                            @foreach($archivedEvents as $event)
+                                <div class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <h5 class="text-xs font-black text-slate-800 truncate">{{ $event->title }}</h5>
+                                        <p class="text-[10px] text-slate-400">{{ $event->start_time->format('M d, Y') }} - {{ $event->end_time->format('M d, Y') }} | {{ $event->tasks->count() }} task(s)</p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="bg-slate-100 text-slate-600 text-[9px] font-black px-2 py-1 rounded uppercase">{{ $event->status }}</span>
+                                        <form action="{{ route('org.events.destroy', $event->id) }}" method="POST" onsubmit="return confirm('Permanently remove this archived event from the planner?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-[9px] font-black text-rose-500 hover:text-rose-700 uppercase">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </details>
                 @endif
             </div>
         </div>
@@ -158,7 +348,7 @@
             </div>
 
             @if($taskApplications->count() > 0)
-                <div class="space-y-3">
+                <div class="space-y-2">
                     @foreach($taskApplications as $application)
                         @php
                             $requiredSkillIds = $application->task->skills->pluck('id')->toArray();
@@ -167,57 +357,81 @@
                             $matchScore = count($requiredSkillIds) > 0 ? round((count($matchedSkillIds) / count($requiredSkillIds)) * 100) : 100;
                             $matchClass = $matchScore >= 80 ? 'bg-emerald-100 text-emerald-700' : ($matchScore >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600');
                         @endphp
-                        <div class="p-4 bg-slate-50/50 border border-slate-200/80 rounded-2xl space-y-3">
-                            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                                <div class="flex items-start gap-3">
+                        <div class="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-visible">
+                            <div class="p-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+                                <div class="min-w-0 flex items-start gap-3">
                                     @if($application->user->profile_photo_path)
-                                        <img src="{{ asset('storage/' . $application->user->profile_photo_path) }}" alt="{{ $application->user->name }}" class="h-10 w-10 rounded-full object-cover border border-slate-200">
+                                        <img src="{{ asset('storage/' . $application->user->profile_photo_path) }}" alt="{{ $application->user->name }}" class="h-11 w-11 rounded-full object-cover border border-slate-200 shrink-0">
                                     @else
-                                        <div class="h-10 w-10 rounded-full bg-jci-blue text-white flex items-center justify-center font-black text-xs">
+                                        <div class="h-11 w-11 rounded-full bg-jci-blue text-white flex items-center justify-center font-black text-xs shrink-0">
                                             {{ strtoupper(substr($application->user->name, 0, 1)) }}
                                         </div>
                                     @endif
-                                    <div>
-                                        <h4 class="text-sm font-black text-slate-800">{{ $application->user->name }}</h4>
-                                        <p class="text-[11px] text-slate-500">{{ $application->task->title }} • {{ $application->event->title }}</p>
-                                        <p class="text-[10px] text-slate-400 mt-0.5">Applied {{ $application->created_at->format('M d, Y g:i A') }}</p>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h4 class="text-sm font-black text-slate-800 truncate">{{ $application->user->name }}</h4>
+                                            <span class="{{ $matchClass }} text-[9px] font-black px-2 py-1 rounded-lg whitespace-nowrap">
+                                                {{ $matchScore }}% Match
+                                            </span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 mt-0.5 truncate">{{ $application->task->title }} - {{ $application->event->title }}</p>
+                                        <p class="text-[10px] text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                                            <span><i class="fa-regular fa-clock"></i> {{ $application->created_at->format('M d, Y g:i A') }}</span>
+                                            @if($application->user->email)
+                                                <span class="hidden sm:inline text-slate-300">|</span>
+                                                <span class="truncate">{{ $application->user->email }}</span>
+                                            @endif
+                                        </p>
                                     </div>
                                 </div>
-                                <span class="{{ $matchClass }} text-[9px] font-black px-2 py-1 rounded-lg whitespace-nowrap">
-                                    Skill Match {{ $matchScore }}%
-                                </span>
-                            </div>
 
-                            @if($application->message)
-                                <div class="bg-white border border-slate-200 rounded-xl p-3">
-                                    <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Volunteer message</span>
-                                    <p class="text-xs text-slate-700 leading-relaxed">{{ $application->message }}</p>
+                                <div class="flex flex-col sm:flex-row xl:justify-end gap-2 xl:shrink-0">
+                                    <form action="{{ route('org.applications.approve', $application->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black px-4 py-2 rounded-lg transition flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-check"></i> Approve
+                                        </button>
+                                    </form>
+                                    <details class="relative group">
+                                        <summary class="list-none cursor-pointer w-full sm:w-auto bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-black px-4 py-2 rounded-lg transition flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-xmark"></i> Reject
+                                        </summary>
+                                        <form action="{{ route('org.applications.reject', $application->id) }}" method="POST" class="mt-2 sm:absolute sm:right-0 sm:top-full sm:w-72 bg-white border border-slate-200 rounded-xl p-3 shadow-xl z-20 space-y-2">
+                                            @csrf
+                                            <label class="block text-[9px] font-black uppercase text-slate-400">Feedback for volunteer</label>
+                                            <textarea name="feedback" rows="3" maxlength="1000" required placeholder="Brief reason or next step"
+                                                      class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-rose-500 focus:outline-none resize-none"></textarea>
+                                            <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-black py-2 rounded-lg transition">
+                                                Confirm Rejection
+                                            </button>
+                                        </form>
+                                    </details>
                                 </div>
-                            @endif
-
-                            <div class="flex flex-wrap gap-1">
-                                @foreach($application->task->skills as $skill)
-                                    <span class="bg-white border border-slate-200 text-slate-600 text-[8px] font-bold px-1.5 py-0.5 rounded">
-                                        {{ $skill->name }}
-                                    </span>
-                                @endforeach
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <form action="{{ route('org.applications.approve', $application->id) }}" method="POST" class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3">
-                                    @csrf
-                                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black py-2 rounded-lg transition">
-                                        Approve & Assign
-                                    </button>
-                                </form>
-                                <form action="{{ route('org.applications.reject', $application->id) }}" method="POST" class="bg-rose-50/60 border border-rose-100 rounded-xl p-3 space-y-2">
-                                    @csrf
-                                    <textarea name="feedback" rows="2" maxlength="1000" required placeholder="Reason or feedback"
-                                              class="w-full border border-rose-100 rounded-lg p-2 text-xs focus:ring-1 focus:ring-rose-500 focus:outline-none resize-none"></textarea>
-                                    <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-black py-2 rounded-lg transition">
-                                        Reject Application
-                                    </button>
-                                </form>
+                            <div class="px-4 pb-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
+                                @if($application->message)
+                                    <div class="bg-slate-50/80 border border-slate-100 rounded-xl p-3">
+                                        <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Volunteer message</span>
+                                        <p class="text-xs text-slate-700 leading-relaxed">{{ $application->message }}</p>
+                                    </div>
+                                @else
+                                    <div class="bg-slate-50/80 border border-slate-100 rounded-xl p-3">
+                                        <p class="text-xs text-slate-400 italic">No message included.</p>
+                                    </div>
+                                @endif
+
+                                <div class="flex flex-wrap gap-1 lg:max-w-xs">
+                                    @forelse($application->task->skills as $skill)
+                                        <span class="bg-slate-50 border border-slate-200 text-slate-600 text-[8px] font-bold px-1.5 py-0.5 rounded">
+                                            {{ $skill->name }}
+                                        </span>
+                                    @empty
+                                        <span class="bg-slate-50 border border-slate-200 text-slate-400 text-[8px] font-bold px-1.5 py-0.5 rounded">
+                                            No required skills
+                                        </span>
+                                    @endforelse
+                                </div>
                             </div>
                         </div>
                     @endforeach

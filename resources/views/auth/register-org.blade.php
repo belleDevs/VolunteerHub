@@ -54,6 +54,10 @@
 
                 <form action="{{ route('register.org') }}" method="POST" class="space-y-4">
                     @csrf
+                    <div class="hidden" aria-hidden="true">
+                        <label for="organization-website">Website</label>
+                        <input id="organization-website" type="text" name="website" value="" tabindex="-1" autocomplete="off">
+                    </div>
 
                     <!-- Organization Name -->
                     <div>

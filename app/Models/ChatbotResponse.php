@@ -13,12 +13,24 @@ class ChatbotResponse extends Model
         'user_id',
         'message',
         'response',
+        'admin_reply',
+        'admin_replied_by',
+        'admin_replied_at',
         'intent',
         'confidence',
+    ];
+
+    protected $casts = [
+        'admin_replied_at' => 'datetime',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function adminResponder()
+    {
+        return $this->belongsTo(User::class, 'admin_replied_by');
     }
 }

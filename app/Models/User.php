@@ -21,6 +21,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'organization_id',
         'phone',
         'bio',
         'profile_photo_path',
@@ -62,6 +63,11 @@ class User extends Authenticatable
     public function events()
     {
         return $this->hasMany(Event::class, 'organization_id');
+    }
+
+    public function primaryOrganization()
+    {
+        return $this->belongsTo(User::class, 'organization_id');
     }
 
     public function assignments()
