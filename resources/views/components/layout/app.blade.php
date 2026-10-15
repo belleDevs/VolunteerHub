@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'VolunteerHub - JCI Surigao Wensies Portal' }}</title>
+    <script>
+        try {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) {}
+    </script>
     
     <!-- Google Fonts (Inter) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,7 +21,7 @@
     <!-- Assets via Vite -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col custom-scrollbar">
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col custom-scrollbar dark:bg-slate-950 dark:text-slate-100">
 
     <div id="toast-container" class="fixed top-6 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full"></div>
 
@@ -164,7 +171,10 @@
         });
 
         function dismissNotification(id, event) {
-            if (event) event.stopPropagation();
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
 
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             

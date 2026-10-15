@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -23,7 +24,13 @@ class TaskVolunteerInviteMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $organization = $this->task->event?->organization;
+
         return new Envelope(
+            from: new Address(
+                (string) config('mail.from.address'),
+                $organization?->name ?: (string) config('mail.from.name')
+            ),
             subject: 'Volunteer Needed: ' . $this->task->title,
         );
     }

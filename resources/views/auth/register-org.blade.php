@@ -138,6 +138,55 @@
                         </div>
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Organization Type <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                <i class="fa-solid fa-hand-holding-heart text-xs"></i>
+                            </span>
+                            <select name="organization_type" required
+                                    class="w-full border border-slate-200 rounded-xl pl-10 pr-8 py-2.5 text-xs bg-white focus:ring-1 focus:ring-jci-blue focus:outline-none appearance-none @error('organization_type') border-rose-500 @enderror">
+                                <option value="" disabled {{ old('organization_type') ? '' : 'selected' }}>Select a socio-civic focus</option>
+                                @foreach(\App\Models\User::ORGANIZATION_TYPES as $value => $label)
+                                    <option value="{{ $value }}" {{ old('organization_type') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 pointer-events-none">
+                                <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                            </span>
+                        </div>
+                        @error('organization_type')
+                            <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Event completion reward <span class="text-rose-500">*</span></label>
+                            <select name="event_reward" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-1 focus:ring-jci-blue focus:outline-none @error('event_reward') border-rose-500 @enderror">
+                                <option value="" disabled {{ old('event_reward') ? '' : 'selected' }}>Select an event reward</option>
+                                @foreach(\App\Models\User::EVENT_REWARDS as $value => $label)
+                                    <option value="{{ $value }}" {{ old('event_reward') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('event_reward')
+                                <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Task completion reward <span class="text-rose-500">*</span></label>
+                            <select name="task_reward" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-1 focus:ring-jci-blue focus:outline-none @error('task_reward') border-rose-500 @enderror">
+                                <option value="" disabled {{ old('task_reward') ? '' : 'selected' }}>Select a task reward</option>
+                                @foreach(\App\Models\User::TASK_REWARDS as $value => $label)
+                                    <option value="{{ $value }}" {{ old('task_reward') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('task_reward')
+                                <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
                     <!-- Bio / Organization Profile -->
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Organization Profile / Mission Statement <span class="text-rose-500">*</span></label>

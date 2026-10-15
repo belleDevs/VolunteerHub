@@ -47,7 +47,7 @@
     <!-- Print controls -->
     <div class="no-print mb-4 sm:mb-6 flex flex-wrap justify-center gap-3">
         <button onclick="window.print()" class="bg-jci-accent hover:bg-amber-600 text-jci-dark font-black text-xs px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2 transition duration-200">
-            <i class="fa-solid fa-print"></i> Print or Save as PDF
+            <i class="fa-solid fa-print"></i> Print
         </button>
         <button onclick="window.close()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition duration-200">
             Close Window
@@ -73,8 +73,8 @@
             <!-- Logo Header -->
             <div class="flex flex-col items-center gap-1.5">
                 <i class="fa-solid fa-hands-holding-child text-jci-blue text-4xl"></i>
-                <h4 class="font-serif text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Junior Chamber International</h4>
-                <h3 class="font-serif text-xs font-black uppercase tracking-[0.1em] text-jci-dark">JCI Surigao Wensies Chapter</h3>
+                <h4 class="font-serif text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">VolunteerHub</h4>
+                <h3 class="font-serif text-xs font-black uppercase tracking-[0.1em] text-jci-dark">{{ $certificate->event?->organization?->name ?? 'Organization' }}</h3>
             </div>
 
             <!-- Main Titles -->
@@ -104,21 +104,32 @@
                     In grateful recognition and appreciation of outstanding volunteer services and active community involvement rendered during the socio-civic action:
                 </p>
                 <h4 class="font-extrabold text-sm text-jci-dark mt-2">
-                    {{ $certificate->event->title }}
+                    {{ $certificate->event->title ?? 'Event' }}
                 </h4>
                 <p class="text-[10px] text-slate-400 mt-1">
-                    Held on {{ $certificate->event->start_time->format('F d, Y') }} at {{ $certificate->event->location }}
+                    @if($certificate->event?->start_time)
+                        Held on {{ $certificate->event->start_time->format('F d, Y') }}@if($certificate->event->location) at {{ $certificate->event->location }}@endif
+                    @endif
                 </p>
+                @php
+                    $completedTaskTitles = $certificate->completedTaskTitles();
+                @endphp
+                @if($completedTaskTitles !== [])
+                    <p class="text-[11px] text-slate-500 mt-2">Tasks completed: {{ implode(', ', $completedTaskTitles) }}</p>
+                @endif
+                @if($certificate->hours_rendered)
+                    <p class="text-[11px] text-slate-500 mt-1">{{ rtrim(rtrim(number_format((float) $certificate->hours_rendered, 2), '0'), '.') }} hours rendered</p>
+                @endif
             </div>
 
             <!-- Signature & Seal Blocks -->
             <div class="grid grid-cols-3 items-end mt-6">
                 <!-- Signature 1 -->
                 <div class="text-center flex flex-col items-center">
-                    <div class="w-24 border-b border-slate-300 pb-1 text-[11px] font-black text-slate-800 font-serif italic">
-                        JCI Coordinator
+                    <div class="w-28 border-b border-slate-300 pb-1 text-[11px] font-black text-slate-800 font-serif italic">
+                        {{ $certificate->event?->organization?->name ?? 'Organization' }}
                     </div>
-                    <span class="text-[8px] uppercase tracking-wider text-slate-400 mt-1">Authorized signature</span>
+                    <span class="text-[8px] uppercase tracking-wider text-slate-400 mt-1">Issuing organization</span>
                 </div>
 
                 <!-- Gold Seal -->

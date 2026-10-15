@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use App\Models\AuditLog;
+use App\Models\User;
+use App\Support\AuditTrail;
+use App\Support\OrgNotifier;
+use App\Support\PortalNotifier;
 
 class AuthController extends Controller
 {
@@ -50,6 +55,17 @@ class AuthController extends Controller
 
             // Check if organization is approved
             if ($user->role === 'organization' && $user->status !== 'approved') {
+                AuditTrail::record([
+                    'action' => 'Login denied',
+                    'action_type' => 'other',
+                    'module' => 'Authentication',
+                    'description' => 'Sign-in was denied because the organization account is '.$user->status.'.',
+                    'status' => 'failed',
+                    'actor' => $user,
+                    'subject' => $user,
+                    'subject_label' => $user->name,
+                    'previous' => ['status' => $user->status],
+                ]);
                 Auth::logout();
                 $msg = $user->status === 'pending'
                     ? 'Your organization account is undergoing compliance review.'
@@ -61,8 +77,32 @@ class AuthController extends Controller
 
             $request->session()->regenerate();
 
+            AuditTrail::record([
+                'action' => 'Logged in',
+                'action_type' => 'other',
+                'module' => 'Authentication',
+                'description' => $user->name.' signed in.',
+                'actor' => $user,
+                'subject' => $user,
+                'subject_label' => $user->name,
+            ]);
+
             return $this->redirectBasedOnRole($user);
         }
+
+        $attempted = User::where('email', $credentials['email'])->first();
+        AuditTrail::record([
+            'action' => 'Login failed',
+            'action_type' => 'other',
+            'module' => 'Authentication',
+            'description' => 'Sign-in failed for '.$credentials['email'].'.',
+            'status' => 'failed',
+            'actor' => $attempted,
+            'actor_name' => $attempted->name ?? $credentials['email'],
+            'actor_role' => $attempted->role ?? 'unknown',
+            'user_id' => $attempted?->id,
+            'subject_label' => $credentials['email'],
+        ]);
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
@@ -128,6 +168,29 @@ class AuthController extends Controller
             $user->skills()->sync($data['skills']);
         }
 
+        AuditTrail::record([
+            'action' => 'Volunteer registered',
+            'action_type' => 'created',
+            'module' => 'Accounts',
+            'description' => $user->name.' created a volunteer account.',
+            'actor' => $user,
+            'subject' => $user,
+            'subject_label' => $user->name,
+            'new' => ['role' => 'volunteer', 'status' => 'approved'],
+        ]);
+
+        OrgNotifier::send(
+            (int) $user->organization_id,
+            'volunteer',
+            'New volunteer registered',
+            $user->name.' registered with the email '.$user->email.'.',
+            $user->name,
+            route('org.dashboard', ['section' => 'volunteers']),
+            'View volunteers',
+            true,
+            'volunteer-registered-'.$user->id
+        );
+
         Auth::login($user);
 
         return redirect()->route('volunteer.dashboard')
@@ -161,6 +224,9 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['required', 'string', 'max:20'],
             'bio' => ['required', 'string', 'max:1000'],
+            'organization_type' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(\App\Models\User::ORGANIZATION_TYPES))],
+            'event_reward' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(\App\Models\User::EVENT_REWARDS))],
+            'task_reward' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(\App\Models\User::TASK_REWARDS))],
             'website' => ['nullable', 'prohibited'],
         ]);
 
@@ -172,26 +238,29 @@ class AuthController extends Controller
             'status' => 'pending',
             'phone' => $data['phone'],
             'bio' => $data['bio'],
+            'organization_type' => $data['organization_type'],
+            'event_reward' => $data['event_reward'],
+            'task_reward' => $data['task_reward'],
         ]);
 
-        // Send notification to all admin accounts for audit review
-        $admins = \App\Models\User::where('role', 'admin')->get();
-        foreach ($admins as $admin) {
-            DB::table('notifications')->insert([
-                'id' => \Illuminate\Support\Str::uuid(),
-                'type' => 'App\\Notifications\\GenericNotification',
-                'notifiable_type' => 'App\\Models\\User',
-                'notifiable_id' => $admin->id,
-                'data' => json_encode([
-                    'title' => 'New Organization Application',
-                    'message' => "Organization '{$user->name}' has applied for registration and is awaiting compliance audit.",
-                    'icon' => 'fa-building-circle-check',
-                ]),
-                'read_at' => null,
-                'created_at' => \Carbon\Carbon::now(),
-                'updated_at' => \Carbon\Carbon::now(),
-            ]);
-        }
+        AuditTrail::record([
+            'action' => 'Organization registered',
+            'action_type' => 'created',
+            'module' => 'Organizations',
+            'description' => $user->name.' applied for an organization account.',
+            'actor' => $user,
+            'subject' => $user,
+            'subject_label' => $user->name,
+            'new' => ['status' => 'pending', 'organization_type' => $user->organization_type],
+        ]);
+
+        PortalNotifier::admins(
+            'New organization application',
+            $user->name . ' applied and is waiting for review.',
+            $user->name . ' applied as a ' . ($user->organizationTypeLabel() ?? 'partner organization') . '. Review the registration before the organization can post events. Event reward: ' . ($user->eventRewardLabel() ?? 'not set') . '. Task reward: ' . ($user->taskRewardLabel() ?? 'not set') . '.',
+            'fa-building-circle-check',
+            route('admin.dashboard', ['tab' => 'audits'])
+        );
 
         return redirect()->route('login')
             ->with('status', "Application submitted for '{$user->name}'! Your organization account is undergoing compliance review by the Admin.");
@@ -203,6 +272,16 @@ class AuthController extends Controller
     private function guardRegistrationSpam(Request $request, string $type): void
     {
         if ($request->filled('website')) {
+            AuditTrail::record([
+                'action' => 'Registration blocked',
+                'action_type' => 'other',
+                'module' => 'Accounts',
+                'description' => 'A '.$type.' registration was blocked.',
+                'status' => 'failed',
+                'actor_name' => (string) $request->input('email', 'Unknown'),
+                'actor_role' => 'unknown',
+                'user_id' => null,
+            ]);
             throw ValidationException::withMessages([
                 'email' => 'We could not process this registration. Please try again.',
             ]);
@@ -221,6 +300,17 @@ class AuthController extends Controller
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
 
+            AuditTrail::record([
+                'action' => 'Registration blocked',
+                'action_type' => 'other',
+                'module' => 'Accounts',
+                'description' => 'Too many '.$type.' registration attempts were blocked.',
+                'status' => 'failed',
+                'actor_name' => (string) $request->input('email', 'Unknown'),
+                'actor_role' => 'unknown',
+                'user_id' => null,
+            ]);
+
             throw ValidationException::withMessages([
                 'email' => "Too many registration attempts. Please try again in {$seconds} seconds.",
             ]);
@@ -234,6 +324,19 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $user = Auth::user();
+        if ($user) {
+            AuditTrail::record([
+                'action' => 'Logged out',
+                'action_type' => 'other',
+                'module' => 'Authentication',
+                'description' => $user->name.' signed out.',
+                'actor' => $user,
+                'subject' => $user,
+                'subject_label' => $user->name,
+            ]);
+        }
+
         Auth::logout();
 
         $request->session()->invalidate();
@@ -266,6 +369,17 @@ class AuthController extends Controller
     public function showProfile()
     {
         $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            return view('admin.profile', [
+                'user' => $user,
+                'actions' => AuditLog::where('user_id', $user->id)->count(),
+                'orgsVerified' => AuditLog::where('user_id', $user->id)->where('action', 'Organization approved')->count(),
+                'reports' => AuditLog::where('user_id', $user->id)->where('module', 'Reports')->count(),
+                'passwordChangedAt' => AuditLog::where('user_id', $user->id)->where('action', 'Password changed')->latest('created_at')->first()?->created_at,
+            ]);
+        }
+
         return view('auth.profile-edit', compact('user'));
     }
 
@@ -277,22 +391,79 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $data = $request->validate([
+        if ($request->input('section') === 'password') {
+            $request->validate([
+                'current_password' => ['required', 'current_password'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
+
+            $user->password = $request->password;
+            $user->save();
+
+            AuditTrail::record([
+                'action' => 'Password changed',
+                'action_type' => 'updated',
+                'module' => 'Authentication',
+                'description' => $user->name.' changed their password.',
+                'subject' => $user,
+                'subject_label' => $user->name,
+            ]);
+
+            return redirect()->to($user->role === 'volunteer'
+                    ? route('volunteer.dashboard', ['section' => 'settings'])
+                    : route('profile.show'))
+                ->with('success', 'Your password has been updated.');
+        }
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-        ]);
+        ];
+
+        if ($user->role === 'volunteer') {
+            $rules['interests'] = ['nullable', 'string', 'max:1000'];
+            $rules['volunteer_experience'] = ['nullable', 'string', 'max:2000'];
+        }
+
+        if ($user->role === 'organization') {
+            $rules['organization_type'] = ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(\App\Models\User::ORGANIZATION_TYPES))];
+            $rules['event_reward'] = ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(\App\Models\User::EVENT_REWARDS))];
+            $rules['task_reward'] = ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(\App\Models\User::TASK_REWARDS))];
+        }
+
+        $data = $request->validate($rules);
+        $before = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'organization_type' => $user->organization_type,
+            'event_reward' => $user->event_reward,
+            'task_reward' => $user->task_reward,
+        ];
 
         $user->name = $data['name'];
         $user->email = $data['email'];
         $user->phone = $data['phone'] ?? null;
-        $user->bio = $data['bio'] ?? null;
+        if ($request->exists('bio')) {
+            $user->bio = $data['bio'] ?? null;
+        }
+        if ($user->role === 'volunteer') {
+            $user->interests = $data['interests'] ?? null;
+            $user->volunteer_experience = $data['volunteer_experience'] ?? null;
+        }
+
+        if ($user->role === 'organization') {
+            $user->organization_type = $data['organization_type'] ?? null;
+            $user->event_reward = $data['event_reward'] ?? null;
+            $user->task_reward = $data['task_reward'] ?? null;
+        }
 
         if ($request->filled('password')) {
-            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+            $user->password = $request->password;
         }
 
         if ($request->hasFile('profile_photo')) {
@@ -306,6 +477,42 @@ class AuthController extends Controller
 
         $user->save();
 
+        $after = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'organization_type' => $user->organization_type,
+            'event_reward' => $user->event_reward,
+            'task_reward' => $user->task_reward,
+        ];
+
+        if ($before !== $after || $request->hasFile('profile_photo')) {
+            if ($request->hasFile('profile_photo')) {
+                $after['profile_photo'] = 'updated';
+            }
+            AuditTrail::record([
+                'action' => 'Profile updated',
+                'action_type' => 'updated',
+                'module' => 'Accounts',
+                'description' => $user->name.' updated their profile.',
+                'subject' => $user,
+                'subject_label' => $user->name,
+                'previous' => $before,
+                'new' => $after,
+            ]);
+        }
+
+        if ($request->filled('password')) {
+            AuditTrail::record([
+                'action' => 'Password changed',
+                'action_type' => 'updated',
+                'module' => 'Authentication',
+                'description' => $user->name.' changed their password.',
+                'subject' => $user,
+                'subject_label' => $user->name,
+            ]);
+        }
+
         return redirect()->route('profile.show')
             ->with('success', 'Your profile details have been updated successfully.');
     }
@@ -315,14 +522,16 @@ class AuthController extends Controller
      */
     public function markNotificationRead($id)
     {
-        $notification = DB::table('notifications')
+            $notification = DB::table('notifications')
             ->where('notifiable_id', Auth::id())
+            ->where('notifiable_type', User::class)
             ->where('id', $id)
             ->first();
 
         if ($notification) {
             DB::table('notifications')
                 ->where('id', $id)
+                ->where('notifiable_id', Auth::id())
                 ->update(['read_at' => now()]);
         }
 

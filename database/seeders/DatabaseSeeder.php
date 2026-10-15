@@ -56,6 +56,9 @@ class DatabaseSeeder extends Seeder
             'role' => 'organization',
             'status' => 'approved',
             'phone' => '09000000002',
+            'organization_type' => 'women_empowerment',
+            'event_reward' => 'service_certificate',
+            'task_reward' => 'service_hours',
             'bio' => 'Empowering Surigaonon women through dynamic leadership, community projects, and responsive socioeconomic outreach.'
         ]);
 
@@ -66,6 +69,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'volunteer',
             'status' => 'approved',
+            'organization_id' => $org->id,
             'availability' => 'active',
             'phone' => '09123456789',
             'bio' => 'Active civic volunteer supporting community outreach and event assistance.'
@@ -92,6 +96,7 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'volunteer',
                 'status' => 'approved',
+                'organization_id' => $org->id,
                 'availability' => 'active',
                 'bio' => $v['bio']
             ]);
@@ -107,6 +112,9 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'organization',
             'status' => 'pending',
+            'organization_type' => 'community_infrastructure',
+            'event_reward' => 'public_recognition',
+            'task_reward' => 'skill_badge',
             'bio' => 'Civic group focused on building coastal standard public benches and parks around Surigao City coastline.'
         ]);
 
@@ -116,6 +124,9 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'organization',
             'status' => 'pending',
+            'organization_type' => 'disaster_response',
+            'event_reward' => 'priority_invite',
+            'task_reward' => 'allowance_note',
             'bio' => 'Disaster response organization specializing in emergency supply delivery during typhoon seasons.'
         ]);
 
@@ -187,7 +198,7 @@ class DatabaseSeeder extends Seeder
             'title' => 'Seminar Registration Booth',
             'description' => 'Welcoming participants, verifying lists, and distributing badges.',
             'priority' => 'low',
-            'status' => 'in_progress',
+            'status' => 'assigned',
             'due_date' => Carbon::create(2026, 9, 12, 9, 0),
         ]);
         $task4->skills()->attach([
@@ -199,7 +210,7 @@ class DatabaseSeeder extends Seeder
             'title' => 'Sound System Coordination',
             'description' => 'Setup audio microphones, projection screen, and sound levels.',
             'priority' => 'medium',
-            'status' => 'in_progress',
+            'status' => 'assigned',
             'due_date' => Carbon::create(2026, 9, 12, 7, 0),
         ]);
         $task5->skills()->attach([

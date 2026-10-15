@@ -15,6 +15,7 @@ class Assignment extends Model
         'event_id',
         'task_id',
         'status',
+        'responded_at',
         'hours_logged',
         'feedback',
         'completion_note',
@@ -25,6 +26,7 @@ class Assignment extends Model
     ];
 
     protected $casts = [
+        'responded_at' => 'datetime',
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
     ];

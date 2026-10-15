@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Custom Scrollbar Styles */
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
@@ -65,3 +67,33 @@
     border-color: #0097d6;
     box-shadow: 0 0 0 3px rgba(0, 151, 214, 0.15);
 }
+
+/* Organization portal dark mode. Keeps the blue accent and restyles shared surfaces. */
+.dark :is(.org-shell, #admin-shell) .bg-white { background-color: #0f172a; }
+.dark :is(.org-shell, #admin-shell) .bg-slate-50,
+.dark :is(.org-shell, #admin-shell) .bg-slate-50\/50,
+.dark :is(.org-shell, #admin-shell) .bg-slate-50\/70,
+.dark :is(.org-shell, #admin-shell) .bg-slate-50\/80 { background-color: #1e293b; }
+.dark :is(.org-shell, #admin-shell) .text-slate-900,
+.dark :is(.org-shell, #admin-shell) .text-slate-800 { color: #f1f5f9; }
+.dark :is(.org-shell, #admin-shell) .text-slate-700,
+.dark :is(.org-shell, #admin-shell) .text-slate-600 { color: #cbd5e1; }
+.dark :is(.org-shell, #admin-shell) .text-slate-500,
+.dark :is(.org-shell, #admin-shell) .text-slate-400 { color: #94a3b8; }
+.dark :is(.org-shell, #admin-shell) .border-slate-200,
+.dark :is(.org-shell, #admin-shell) .border-slate-100,
+.dark :is(.org-shell, #admin-shell) .border-slate-200\/80,
+.dark :is(.org-shell, #admin-shell) .border-slate-200\/60 { border-color: #334155; }
+.dark :is(.org-shell, #admin-shell) .glass-card {
+    background: rgba(15, 23, 42, 0.92);
+    border-color: #334155;
+}
+.dark :is(.org-shell, #admin-shell) input,
+.dark :is(.org-shell, #admin-shell) select,
+.dark :is(.org-shell, #admin-shell) textarea {
+    background-color: #0b1220;
+    color: #f1f5f9;
+    border-color: #334155;
+}
+.dark :is(.org-shell, #admin-shell) .bg-blue-50 { background-color: rgba(0, 151, 214, 0.16); }
+.dark :is(.org-shell, #admin-shell) .bg-blue-100 { background-color: rgba(0, 151, 214, 0.22); }

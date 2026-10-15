@@ -26,9 +26,9 @@
                     <i class="fa-solid fa-robot text-lg"></i>
                 </div>
                 <div>
-                    <h4 class="font-black text-xs tracking-wide">JCI Volunteer AI Assistant</h4>
-                    <p class="text-[10px] text-sky-200 flex items-center gap-1">
-                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online • Rule & Context AI
+                    <h4 id="chatbot-title" class="font-black text-xs tracking-wide">JCI Volunteer AI Assistant</h4>
+                    <p id="chatbot-status" class="text-[10px] text-sky-200 flex items-center gap-1">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Answers from saved information
                     </p>
                 </div>
             </div>
@@ -45,7 +45,7 @@
                     <i class="fa-solid fa-robot"></i>
                 </div>
                 <div class="bg-slate-100 text-slate-800 p-3 rounded-2xl rounded-tl-xs max-w-[85%] shadow-xs leading-relaxed">
-                    Hello {{ Auth::user()->name }}! 👋 I'm your JCI VolunteerHub Assistant. Ask me about your <b>duties</b>, <b>certificates</b>, <b>skills</b>, or local JCI projects!
+                    Hello {{ Auth::user()->name }}! I can answer from your saved skills, assignments, certificates, and organization details. If I don't know, your organization will reply.
                     <span class="block text-[9px] text-slate-400 mt-1 font-semibold">Just now</span>
                 </div>
             </div>
@@ -115,6 +115,14 @@
             if (!volunteerChatLoaded) {
                 loadChatbotHistory();
                 volunteerChatLoaded = true;
+                if (!window.volunteerChatPoll) {
+                    window.volunteerChatPoll = setInterval(function () {
+                        const open = !document.getElementById('volunteer-chatbot-drawer')?.classList.contains('pointer-events-none');
+                        if (open) {
+                            loadChatbotHistory();
+                        }
+                    }, 8000);
+                }
             }
         } else {
             drawer.classList.add('scale-90', 'opacity-0', 'pointer-events-none');
@@ -134,13 +142,28 @@
         try {
             const res = await fetch("{{ route('volunteer.chatbot.history') }}");
             const data = await res.json();
+            const container = document.getElementById('chatbot-messages');
+            container?.querySelectorAll('[data-chat-row]').forEach(function (row) { row.remove(); });
+            const title = document.getElementById('chatbot-title');
+            const status = document.getElementById('chatbot-status');
+            if (data.mode === 'agent' && data.organization) {
+                if (title) title.textContent = data.organization;
+                if (status) status.textContent = 'Talking with ' + data.organization;
+            } else if (status) {
+                status.textContent = data.organization_online && data.organization
+                    ? data.organization + ' is online'
+                    : 'Answers from saved information';
+            }
             if (data.success && data.history.length > 0) {
-                const container = document.getElementById('chatbot-messages');
                 data.history.forEach(item => {
-                    appendUserBubble(item.message, item.time);
-                    appendAiBubble(item.response, item.time);
+                    if (item.message) {
+                        appendUserBubble(item.message, item.time);
+                    }
+                    if (item.show_assistant && item.response) {
+                        appendAiBubble(item.response, item.time);
+                    }
                     if (item.admin_reply) {
-                        appendAdminBubble(item.admin_reply, item.admin_time || item.time);
+                        appendAdminBubble(item.admin_reply, item.admin_time || item.time, item.organization || data.organization || 'Organization');
                     }
                 });
                 scrollToChatBottom();
@@ -185,7 +208,15 @@
             sendBtn.disabled = false;
 
             if (data.success) {
-                appendAiBubble(data.response, data.time || now);
+                if (data.show_assistant && data.response) {
+                    appendAiBubble(data.response, data.time || now);
+                }
+                if (data.with_agent && data.organization) {
+                    const title = document.getElementById('chatbot-title');
+                    const status = document.getElementById('chatbot-status');
+                    if (title) title.textContent = data.organization;
+                    if (status) status.textContent = 'Talking with ' + data.organization;
+                }
             } else {
                 appendAiBubble("Sorry, I couldn't process your question right now. Please try again.", now);
             }
@@ -202,6 +233,7 @@
         const container = document.getElementById('chatbot-messages');
         const div = document.createElement('div');
         div.className = 'flex items-end justify-end gap-2';
+        div.setAttribute('data-chat-row', '1');
         div.innerHTML = `
             <div class="bg-jci-blue text-white p-3 rounded-2xl rounded-tr-xs max-w-[85%] shadow-xs leading-relaxed">
                 ${escapeHtml(text)}
@@ -215,6 +247,7 @@
         const container = document.getElementById('chatbot-messages');
         const div = document.createElement('div');
         div.className = 'flex items-start gap-2.5 animate-fade-in-up';
+        div.setAttribute('data-chat-row', '1');
         div.innerHTML = `
             <div class="h-7 w-7 rounded-full bg-jci-blue text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-sm">
                 <i class="fa-solid fa-robot"></i>
@@ -227,16 +260,17 @@
         container.appendChild(div);
     }
 
-    function appendAdminBubble(text, time) {
+    function appendAdminBubble(text, time, organization) {
         const container = document.getElementById('chatbot-messages');
         const div = document.createElement('div');
         div.className = 'flex items-start gap-2.5 animate-fade-in-up';
+        div.setAttribute('data-chat-row', '1');
         div.innerHTML = `
-            <div class="h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-sm">
-                <i class="fa-solid fa-user-shield"></i>
+            <div class="h-7 w-7 rounded-full bg-jci-blue text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-sm">
+                <i class="fa-solid fa-building"></i>
             </div>
-            <div class="bg-emerald-50 border border-emerald-100 text-slate-800 p-3 rounded-2xl rounded-tl-xs max-w-[85%] shadow-xs leading-relaxed">
-                <span class="block text-[9px] font-black uppercase text-emerald-700 mb-1">Admin reply</span>
+            <div class="bg-sky-50 border border-sky-100 text-slate-800 p-3 rounded-2xl rounded-tl-xs max-w-[85%] shadow-xs leading-relaxed">
+                <span class="block text-[9px] font-black uppercase text-jci-blue mb-1">${escapeHtml(organization || 'Organization')}</span>
                 ${escapeHtml(text)}
                 <span class="block text-[9px] text-slate-400 mt-1 font-semibold">${time}</span>
             </div>

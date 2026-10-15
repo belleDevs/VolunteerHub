@@ -1,4 +1,4 @@
-<x-layout.app title="VolunteerHub - Edit Profile">
+<x-dynamic-component :component="$user->role === 'volunteer' ? 'layout.volunteer' : 'layout.app'" :active="'profile'" :title="'VolunteerHub - Edit Profile'">
     @php
         $dashboardRoute = route('volunteer.dashboard');
         if ($user->role === 'admin') {
@@ -140,6 +140,58 @@
                         </div>
                     </div>
 
+                    @if($user->role === 'organization')
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                Organization Type <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i class="fa-solid fa-hand-holding-heart text-xs"></i>
+                                </span>
+                                <select name="organization_type" required
+                                        class="w-full border border-slate-200 rounded-xl pl-10 pr-8 py-2.5 text-xs bg-white focus:ring-1 focus:ring-jci-blue focus:outline-none appearance-none @error('organization_type') border-rose-500 @enderror">
+                                    <option value="" disabled {{ old('organization_type', $user->organization_type) ? '' : 'selected' }}>Select a socio-civic focus</option>
+                                    @foreach(\App\Models\User::ORGANIZATION_TYPES as $value => $label)
+                                        <option value="{{ $value }}" {{ old('organization_type', $user->organization_type) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 pointer-events-none">
+                                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                </span>
+                            </div>
+                            @error('organization_type')
+                                <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Event completion reward <span class="text-rose-500">*</span></label>
+                                <select name="event_reward" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                    @foreach(\App\Models\User::EVENT_REWARDS as $value => $label)
+                                        <option value="{{ $value }}" {{ old('event_reward', $user->event_reward) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="text-[10px] text-slate-400 mt-1">Given when a volunteer finishes every task they hold on an event.</p>
+                                @error('event_reward')
+                                    <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Task completion reward <span class="text-rose-500">*</span></label>
+                                <select name="task_reward" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-1 focus:ring-jci-blue focus:outline-none">
+                                    @foreach(\App\Models\User::TASK_REWARDS as $value => $label)
+                                        <option value="{{ $value }}" {{ old('task_reward', $user->task_reward) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="text-[10px] text-slate-400 mt-1">Given when a volunteer finishes one task.</p>
+                                @error('task_reward')
+                                    <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- Bio / Statement of Intent -->
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
@@ -152,6 +204,33 @@
                             <p class="text-[10px] text-rose-500 mt-1 font-bold">{{ $message }}</p>
                         @enderror
                     </div>
+
+                    @if($user->role === 'volunteer')
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Interests</label>
+                            <textarea name="interests" rows="2" maxlength="1000" class="w-full border border-slate-200 rounded-xl p-3 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none resize-none">{{ old('interests', $user->interests) }}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Volunteer experience</label>
+                            <textarea name="volunteer_experience" rows="3" maxlength="2000" class="w-full border border-slate-200 rounded-xl p-3 text-xs focus:ring-1 focus:ring-jci-blue focus:outline-none resize-none">{{ old('volunteer_experience', $user->volunteer_experience) }}</textarea>
+                        </div>
+                        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs text-slate-600">
+                            <p class="font-semibold text-slate-800">Availability</p>
+                            <p class="mt-1">{{ match ($user->availability) { 'inactive' => 'Unavailable', 'limited' => 'Busy / Limited Availability', default => 'Available' } }}</p>
+                            <a href="{{ route('volunteer.dashboard', ['section' => 'availability']) }}" class="mt-2 inline-block font-semibold text-jci-blue">Update availability</a>
+                            <p class="mt-3 font-semibold text-slate-800">Skills</p>
+                            <p class="mt-1">{{ $user->skills->pluck('name')->join(', ') ?: 'No skills saved yet.' }}</p>
+                            <a href="{{ route('volunteer.dashboard', ['section' => 'skills']) }}" class="mt-2 inline-block font-semibold text-jci-blue">Update skills</a>
+                            <p class="mt-3 font-semibold text-slate-800">Recent participation</p>
+                            <ul class="mt-1 space-y-1">
+                                @forelse($user->assignments()->with(['task', 'event'])->latest()->limit(5)->get() as $history)
+                                    <li>{{ $history->task?->title ?? 'Task' }} · {{ $history->event?->title ?? 'Event' }} · {{ ucfirst($history->status) }}</li>
+                                @empty
+                                    <li>No assignments yet.</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    @endif
 
                     <!-- Password Update Section -->
                     <div class="pt-4 border-t border-slate-100">
@@ -203,4 +282,4 @@
 
         </div>
     </div>
-</x-layout.app>
+</x-dynamic-component>

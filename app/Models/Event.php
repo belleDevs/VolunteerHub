@@ -45,4 +45,44 @@ class Event extends Model
     {
         return $this->hasMany(Certificate::class);
     }
+
+    public function photos()
+    {
+        return $this->hasMany(EventPhoto::class)->orderBy('id');
+    }
+
+    /**
+     * Admin oversight status. Draft events stay private until approved.
+     */
+    public function oversightStatus(): string
+    {
+        if ($this->status === 'cancelled') {
+            return 'cancelled';
+        }
+
+        if ($this->status === 'draft') {
+            return 'review';
+        }
+
+        if ($this->status === 'completed') {
+            return 'completed';
+        }
+
+        if ($this->start_time && $this->start_time->isFuture()) {
+            return 'upcoming';
+        }
+
+        return 'ongoing';
+    }
+
+    public function oversightLabel(): string
+    {
+        return match ($this->oversightStatus()) {
+            'upcoming' => 'Upcoming',
+            'ongoing' => 'Ongoing',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+            default => 'Needs review',
+        };
+    }
 }
